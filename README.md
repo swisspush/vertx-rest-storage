@@ -16,6 +16,7 @@ The following methods are supported on leaves (documents):
 
 The following methods are supported on intermediate nodes (collections):
 * GET: Returns the list of collection members. Serves JSON and HTML representations.
+* POST (Expand): Returns the expanded content of the sub resources of the (collection) resource. The depth is limited to 1 level.
 * DELETE: Delete the collection and all its members.
 
 Runs either as a module or can be integrated into an existing application by instantiating the RestStorageHandler class directly.

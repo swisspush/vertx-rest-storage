@@ -92,6 +92,8 @@ public class RedisGetExpandLuaScriptTests extends AbstractLuaScriptTest {
         // ARRANGE
         evalScriptPut(":project:server:test:sub:subsub:item1", "{\"content\": \"content_sub_1\"}");
         evalScriptPut(":project:server:test:sub:subsub:item2", "{\"content\": \"content_sub_2\"}");
+        evalScriptPut(":project:server:test:sub:othersubsub:item3", "{\"content\": \"content_sub_3\"}");
+        evalScriptPut(":project:server:test:sub:othersubsub:item4", "{\"content\": \"content_sub_4\"}");
 
         // ACT
         List<String> subResources = Arrays.asList("sub/");
@@ -100,7 +102,7 @@ public class RedisGetExpandLuaScriptTests extends AbstractLuaScriptTest {
         // ASSERT
         assertThat(value.size(), equalTo(1));
         assertThat(value.get(0).get(0), equalTo("sub"));
-        assertThat(value.get(0).get(1), equalTo("[\"subsub\"]"));
+        assertThat(value.get(0).get(1), equalTo("[\"othersubsub\\/\",\"subsub\\/\"]"));
 
         // ACT
         subResources = Arrays.asList("subsub/");

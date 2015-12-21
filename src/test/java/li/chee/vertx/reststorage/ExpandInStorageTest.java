@@ -72,11 +72,10 @@ public class ExpandInStorageTest extends AbstractTestCase {
                 .post(POST_STORAGE_EXP)
                 .then()
                 .assertThat().statusCode(200).contentType(ContentType.JSON).header(ETAG_HEADER, not(empty()))
-                .body("", hasKey("resources"))
-                .body("resources", allOf(hasKey("res1"), hasKey("res2"), hasKey("res3")))
-                .body("resources.res1.foo", equalTo("bar1"))
-                .body("resources.res2.foo", equalTo("bar2"))
-                .body("resources.res3.foo", equalTo("bar3"));
+                .body("", allOf(hasKey("res1"), hasKey("res2"), hasKey("res3")))
+                .body("res1.foo", equalTo("bar1"))
+                .body("res2.foo", equalTo("bar2"))
+                .body("res3.foo", equalTo("bar3"));
 
         testComplete();
     }
@@ -96,11 +95,10 @@ public class ExpandInStorageTest extends AbstractTestCase {
                 .post(POST_STORAGE_EXP)
                 .then()
                 .assertThat().statusCode(200).contentType(ContentType.JSON).header(ETAG_HEADER, not(empty()))
-                .body("", hasKey("resources"))
-                .body("resources", allOf(hasKey("res1"), hasKey("res3")))
-                .body("resources", not(hasKey("res2")))
-                .body("resources.res1.foo", equalTo("bar1"))
-                .body("resources.res3.foo", equalTo("bar3"));
+                .body("", allOf(hasKey("res1"), hasKey("res3")))
+                .body("", not(hasKey("res2")))
+                .body("res1.foo", equalTo("bar1"))
+                .body("res3.foo", equalTo("bar3"));
 
         testComplete();
     }
@@ -119,11 +117,10 @@ public class ExpandInStorageTest extends AbstractTestCase {
                 .post(POST_STORAGE_EXP)
                 .then()
                 .assertThat().statusCode(200).contentType(ContentType.JSON).header(ETAG_HEADER, not(empty()))
-                .body("", hasKey("resources"))
-                .body("resources", allOf(hasKey("res1"), hasKey("res3")))
-                .body("resources", not(hasKey("res2")))
-                .body("resources.res1.foo", equalTo("bar1"))
-                .body("resources.res3.foo", equalTo("bar3"));
+                .body("", allOf(hasKey("res1"), hasKey("res3")))
+                .body("", not(hasKey("res2")))
+                .body("res1.foo", equalTo("bar1"))
+                .body("res3.foo", equalTo("bar3"));
 
         testComplete();
     }
@@ -160,12 +157,11 @@ public class ExpandInStorageTest extends AbstractTestCase {
                 .post(POST_STORAGE_EXP)
                 .then()
                 .assertThat().statusCode(200).contentType(ContentType.JSON).header(ETAG_HEADER, not(empty()))
-                .body("", hasKey("resources"))
-                .body("resources", allOf(hasKey("res1"), hasKey("res2"), hasKey("res3"), hasKey("sub")))
-                .body("resources.res1.foo", equalTo("bar1"))
-                .body("resources.res2.foo", equalTo("bar2"))
-                .body("resources.res3.foo", equalTo("bar3"))
-                .body("resources.sub", hasItems("sub1", "sub2"));
+                .body("", allOf(hasKey("res1"), hasKey("res2"), hasKey("res3"), hasKey("sub")))
+                .body("res1.foo", equalTo("bar1"))
+                .body("res2.foo", equalTo("bar2"))
+                .body("res3.foo", equalTo("bar3"))
+                .body("sub", hasItems("sub1", "sub2"));
 
         delete("/server/resources");
 
@@ -180,10 +176,22 @@ public class ExpandInStorageTest extends AbstractTestCase {
                 .post(POST_STORAGE_EXP)
                 .then()
                 .assertThat().statusCode(200).contentType(ContentType.JSON).header(ETAG_HEADER, not(empty()))
-                .body("", hasKey("resources"))
-                .body("resources", allOf(hasKey("anothersub"), hasKey("sub")))
-                .body("resources.sub", hasItems("sub1", "sub2"))
-                .body("resources.anothersub", hasItems("sub3", "sub4"));
+                .body("", allOf(hasKey("anothersub"), hasKey("sub")))
+                .body("sub", hasItems("sub1", "sub2"))
+                .body("anothersub", hasItems("sub3", "sub4"));
+
+        with().body("{ \"foo\": \"sub1\" }").put("/server/resources/level1/sub/sub1");
+        with().body("{ \"foo\": \"sub2\" }").put("/server/resources/level1/sub/sub2");
+        with().body("{ \"foo\": \"sub2\" }").put("/server/resources/level1/anothersub/sub3");
+        with().body("{ \"foo\": \"sub2\" }").put("/server/resources/level1/anothersub/sub4");
+
+        given()
+                .body("{ \"subResources\": [\"level1/\"] }")
+                .when()
+                .post(POST_STORAGE_EXP)
+                .then()
+                .assertThat().statusCode(200).contentType(ContentType.JSON).header(ETAG_HEADER, not(empty()))
+                .body("level1", hasItems("anothersub/", "sub/"));
 
         testComplete();
     }

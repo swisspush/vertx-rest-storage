@@ -428,16 +428,7 @@ public class RedisStorage implements Storage {
         args.add(subResources.size());
         command.putArray("args", args);
 
-        reloadScriptIfLoglevelChangedAndExecuteRedisCommand(LuaScript.GET_EXPAND, new GetExpand(command, handler, etag, extractCollectionFromKey(key)), 0);
-    }
-
-    private String extractCollectionFromKey(String key){
-        String[] keySplitted = StringUtils.split(key, ":");
-        String collectionName = "";
-        if(keySplitted.length > 0){
-            collectionName = keySplitted[keySplitted.length - 1];
-        }
-        return collectionName;
+        reloadScriptIfLoglevelChangedAndExecuteRedisCommand(LuaScript.GET_EXPAND, new GetExpand(command, handler, etag), 0);
     }
 
     /**
@@ -450,13 +441,11 @@ public class RedisStorage implements Storage {
         private JsonObject command;
         private Handler<Resource> handler;
         private String etag;
-        private String collection;
 
-        public GetExpand(JsonObject command, final Handler<Resource> handler, String etag, String collection) {
+        public GetExpand(JsonObject command, final Handler<Resource> handler, String etag) {
             this.command = command;
             this.handler = handler;
             this.etag = etag;
-            this.collection = collection;
         }
 
         public void exec(final int executionCounter) {
@@ -474,7 +463,7 @@ public class RedisStorage implements Storage {
                             if(executionCounter > 10) {
                                 log.error("amount the script got loaded is higher than 10, we abort");
                             } else {
-                                luaScripts.get(LuaScript.GET_EXPAND).loadLuaScript(new GetExpand(command, handler, etag, collection), executionCounter);
+                                luaScripts.get(LuaScript.GET_EXPAND).loadLuaScript(new GetExpand(command, handler, etag), executionCounter);
                             }
                             return;
                         }
@@ -486,8 +475,6 @@ public class RedisStorage implements Storage {
                     }
 
                     JsonObject expandResult = new JsonObject();
-                    JsonObject collectionObj = new JsonObject();
-                    expandResult.putObject(collection, collectionObj);
 
                     JsonArray resultArr = new JsonArray((String) value);
 
@@ -496,9 +483,9 @@ public class RedisStorage implements Storage {
                         String subResourceName = entries.get(0);
                         String subResourceValue = entries.get(1);
                         if(subResourceValue.startsWith("[") && subResourceValue.endsWith("]")){
-                            collectionObj.putArray(subResourceName, new JsonArray(subResourceValue));
+                            expandResult.putArray(subResourceName, new JsonArray(subResourceValue));
                         } else {
-                            collectionObj.putObject(subResourceName, new JsonObject(subResourceValue));
+                            expandResult.putObject(subResourceName, new JsonObject(subResourceValue));
                         }
                     }
 

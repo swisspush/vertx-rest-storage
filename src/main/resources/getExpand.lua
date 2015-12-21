@@ -43,6 +43,11 @@ for i=1,subResourcesCount do
         local colPath = collectionsPrefix..path..sep..subResName
         if redis.call('exists',colPath) == 1 then
             local colMembers = redis.call('zrangebyscore',colPath, timestamp, maxtime)
+            for k, v in ipairs(colMembers) do
+                if redis.call('exists',colPath..sep..v) == 1 then
+                    colMembers[k] = v.."/"
+                end
+            end
             table.insert(result, {subResName, cjson.encode(colMembers)})
         end
     else
