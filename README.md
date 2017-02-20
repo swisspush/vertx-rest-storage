@@ -1,6 +1,7 @@
 # vertx-rest-storage
 
-[![Build Status](https://drone.io/github.com/swisspush/vertx-rest-storage/status.png)](https://drone.io/github.com/swisspush/vertx-rest-storage/latest)
+[![Build Status](https://travis-ci.org/swisspush/vertx-rest-storage.svg?branch=master)](https://travis-ci.org/swisspush/vertx-rest-storage)
+[![codecov](https://codecov.io/gh/swisspush/vertx-rest-storage/branch/master/graph/badge.svg)](https://codecov.io/gh/swisspush/vertx-rest-storage)
 [![Maven Central](https://img.shields.io/maven-central/v/org.swisspush/rest-storage.svg)]()
 
 Persistence for REST resources in the filesystem or a redis database. 
