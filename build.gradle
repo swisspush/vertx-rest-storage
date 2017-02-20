@@ -3,6 +3,7 @@ apply plugin: 'java'
 apply plugin: 'maven'
 apply plugin: 'signing'
 apply plugin: 'com.github.johnrengelman.shadow'
+apply plugin: 'jacoco'
 
 archivesBaseName='rest-storage'
 
@@ -174,6 +175,13 @@ test {
             }
         }
     }
+}
+
+jacocoTestReport {
+	reports {
+		xml.enabled true
+		html.enabled false
+	}
 }
 
 uploadArchives {
