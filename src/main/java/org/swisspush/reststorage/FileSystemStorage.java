@@ -152,11 +152,6 @@ public class FileSystemStorage implements Storage {
     }
 
     @Override
-    public void delete(String path, final Handler<Resource> handler) {
-        delete(path, "", LockMode.SILENT, 0, handler);
-    }
-
-    @Override
     public void delete(String path, String lockOwner, LockMode lockMode, long lockExpire, final Handler<Resource> handler ) {
         final String fullPath = canonicalize(path);
         fileSystem().exists(fullPath, event -> {

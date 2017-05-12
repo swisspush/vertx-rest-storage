@@ -17,9 +17,9 @@ public interface Storage {
 
     void put(String path, String etag, boolean merge, long expire, String lockOwner, LockMode lockMode, long lockExpire, boolean storeCompressed, Handler<Resource> handler);
 
-    void delete(String path, Handler<Resource> handler);
-
     void delete(String path, String lockOwner, LockMode lockMode, long lockExpire, Handler<Resource> handler);
+
+    //    void delete(String path, String lockOwner, LockMode lockMode, long lockExpire, boolean confirmCollectionDelete, boolean deleteRecursive, Handler<Resource> handler);
 
     void cleanup(Handler<DocumentResource> handler, String cleanupResourcesAmount);
 
