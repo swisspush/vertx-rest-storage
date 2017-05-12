@@ -1,1 +1,6 @@
-rootProject.name="rest-storage"
+pluginRepositories {
+    if(System.getProperties().getProperty('pluginRepository')!=null){
+        maven { url System.getProperties().getProperty('pluginRepository') }
+        gradlePluginPortal()
+    }
+}
