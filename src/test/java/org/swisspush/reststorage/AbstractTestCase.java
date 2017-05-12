@@ -16,6 +16,8 @@ import org.junit.runner.RunWith;
 import org.swisspush.reststorage.util.ModuleConfiguration;
 import redis.clients.jedis.Jedis;
 
+import static org.swisspush.reststorage.util.HttpRequestHeader.*;
+
 @RunWith(VertxUnitRunner.class)
 public abstract class AbstractTestCase {
 
@@ -25,7 +27,7 @@ public abstract class AbstractTestCase {
     // restAssured Configuration
     private static final int REST_STORAGE_PORT = 8989;
     private static RequestSpecification REQUEST_SPECIFICATION = new RequestSpecBuilder()
-            .addHeader("content-type", "application/json")
+            .addHeader(CONTENT_TYPE.getName(), "application/json")
             .setPort(8989)
             .setBasePath("/")
             .build();
