@@ -1,9 +1,39 @@
+buildscript {
+    repositories {
+        mavenLocal()
+        try {
+            maven {
+                url "$repository"
+            }
+        }catch(Exception e) {
+            maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
+        }
+        try {
+            ivy {
+                url "$repository"
+                layout "maven"
+            }
+        }catch(Exception e) {
+            maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
+        }
+    }
+    dependencies{
+        classpath "io.codearte.gradle.nexus:gradle-nexus-staging-plugin:0.5.3"
+        classpath "com.github.jengelman.gradle.plugins:shadow:1.2.3"
+    }
+}
+
+plugins {
+    id 'net.researchgate.release' version '2.4.0'
+}
+
 apply plugin: 'idea'
 apply plugin: 'java'
 apply plugin: 'maven'
 apply plugin: 'signing'
 apply plugin: 'com.github.johnrengelman.shadow'
 apply plugin: 'jacoco'
+apply plugin: 'io.codearte.nexus-staging'
 
 archivesBaseName='rest-storage'
 
@@ -32,6 +62,7 @@ if(!project.hasProperty('snapshotRepository')) {
 }
 
 repositories {
+    mavenLocal()
     try {
         maven { url "$repository" }
         println 'use custom repository: ' + "$repository"
@@ -39,22 +70,6 @@ repositories {
         maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
     }
     mavenCentral()
-}
-
-buildscript {
-    repositories {
-
-        try {
-            maven { url "$repository" }
-            println 'use custom plugin repository: ' + "$repository"
-        } catch(Exception e) {
-            maven { url "https://plugins.gradle.org/m2/" }
-            println 'use standard plugin repository'
-        }
-    }
-    dependencies {
-        classpath "com.github.jengelman.gradle.plugins:shadow:1.2.3"
-    }
 }
 
 dependencies {
@@ -72,10 +87,10 @@ dependencies {
     testCompile "redis.clients:jedis:$jedisVersion"
     testCompile "junit:junit:$junitVersion"
     testCompile "io.vertx:vertx-unit:$vertxVersion"
-    testCompile 'com.github.kstyrc:embedded-redis:0.6'
-    testCompile 'com.jayway.restassured:rest-assured:2.4.1'
-    testCompile 'org.springframework:spring-context:4.1.0.RELEASE'
-    testCompile 'org.springframework:spring-jdbc:4.1.0.RELEASE'
+    testCompile "com.github.kstyrc:embedded-redis:0.6"
+    testCompile "com.jayway.restassured:rest-assured:2.4.1"
+    testCompile "org.springframework:spring-context:4.1.0.RELEASE"
+    testCompile "org.springframework:spring-jdbc:4.1.0.RELEASE"
     testCompile "com.jayway.awaitility:awaitility:$awaitilityVersion"
 
     testRuntime 'com.github.kstyrc:embedded-redis:0.6'
@@ -88,7 +103,6 @@ gradle.taskGraph.whenReady { taskGraph ->
         ext.InstallOrUpload = true
     }
     if (taskGraph.hasTask(uploadArchives)) {
-
         println "InstallOrUpload: true"
         if ("$uploadRepository".toLowerCase().contains("sonatype")  && "$snapshotRepository".toLowerCase().contains("sonatype")) {
             println "uploadToMavenCentral: true"
@@ -191,23 +205,70 @@ uploadArchives {
     repositories {
         mavenDeployer {
 
+            def snapRepository = project.hasProperty('snapshotRepository') ? project.getProperties().get('snapshotRepository') : null
+            def relRepository = project.hasProperty('uploadRepository') ? project.getProperties().get('uploadRepository') : null
+            def repoUsername = project.hasProperty('repoUsername') ? project.getProperties().get('repoUsername') : null
+            def repoPassword = project.hasProperty('repoPassword') ? project.getProperties().get('repoPassword') : null
+
             configuration = configurations.archives
 
-            repository(url: "$uploadRepository") {
-                authentication(userName: "$repoUsername", password: "$repoPassword")
+            if ( repoUsername == null || repoPassword == null || repoUsername == 'randomUsername' || repoPassword == 'randomPassword') {
+                repository(url: relRepository)
+                snapshotRepository(url: snapRepository)
+            }
+            else {
+                repository(url: relRepository) {
+                    authentication(userName: repoUsername, password: repoPassword)
+                    if (project.hasProperty('proxyHost')) {
+                        proxy(host: project.property('proxyHost'), port: Integer.valueOf(project.property('proxyPort')), type: 'https')
+                    }
+                }
+
+                snapshotRepository(url: snapRepository) {
+                    authentication(userName: repoUsername, password: repoPassword)
+                    if (project.hasProperty('proxyHost')) {
+                        proxy(host: project.property('proxyHost'), port: Integer.valueOf(project.property('proxyPort')), type: 'https')
+                    }
+                }
             }
 
-            snapshotRepository(url: "$snapshotRepository") {
-                authentication(userName: "$repoUsername", password: "$repoPassword")
+            println " > should I sign poms ..."
+            if (relRepository.toLowerCase().contains("sonatype") && snapRepository.toLowerCase().contains("sonatype")) {
+                println " > signing poms ..."
+                beforeDeployment { org.gradle.api.artifacts.maven.MavenDeployment deployment -> signing.signPom(deployment) }
             }
-
-            beforeDeployment { org.gradle.api.artifacts.maven.MavenDeployment deployment -> signing.signPom(deployment) }
 
             configurePom(pom)
         }
     }
-    }
+}
 
+release {
+    failOnCommitNeeded = true
+    failOnPublishNeeded = true
+    failOnSnapshotDependencies = true
+    failOnUnversionedFiles = false
+    failOnUpdateNeeded = true
+    revertOnFail = true
+    preTagCommitMessage = '[Gradle Release Plugin] - pre tag commit: '
+    tagCommitMessage = '[Gradle Release Plugin] - creating tag: '
+    newVersionCommitMessage = '[Gradle Release Plugin] - new version commit: '
+    versionPropertyFile = 'gradle.properties'
+    buildTasks = ['build']
+    tagTemplate = 'v$version'
+    scmAdapters = [
+            net.researchgate.release.GitAdapter
+    ]
+    git {
+        requireBranch = 'master'
+        pushToRemote = 'origin'
+    }
+}
+afterReleaseBuild.dependsOn uploadArchives
+
+nexusStaging {
+    packageGroup = "org.swisspush.reststorage"
+}
 
 def configurePom(def pom) {
     pom.project {

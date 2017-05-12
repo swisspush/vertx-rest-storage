@@ -1,4 +1,5 @@
 target/
+classes/
 build/
 mods/
 .project
@@ -13,3 +14,6 @@ mods/
 .idea/
 *.iml
 *.iws
+.vertx/
+src/main/.gradle/
+src/test/.gradle/
