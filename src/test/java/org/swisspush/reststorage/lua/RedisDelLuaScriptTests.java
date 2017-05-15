@@ -338,6 +338,183 @@ public class RedisDelLuaScriptTests extends AbstractLuaScriptTest {
         assertThat(jedis.exists(prefixLock + path), equalTo(false));
     }
 
+    @Test
+    public void testNoConfirmCollectionDeleteAndNotDeleteRecursive() {
+
+        // ARRANGE
+        evalScriptPut(":project:server:test:test1:test2", "{\"content\": \"test/test1/test2\"}");
+
+        assertThat(jedis.exists("rest-storage:resources:project:server:test:test1:test2"), equalTo(true));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project", getNowAsDouble(), 9999999999999d).size(), equalTo(1));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project:server", getNowAsDouble(), 9999999999999d).size(), equalTo(1));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project:server:test", getNowAsDouble(), 9999999999999d).size(), equalTo(1));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project:server:test:test1", getNowAsDouble(), 9999999999999d).size(), equalTo(1));
+
+        // ACT -> delete on level collection
+        String value = (String) evalScriptDel(":project:server:test:test1", false, false);
+
+        // ASSERT
+        assertThat(value, equalTo("deleted"));
+        assertThat(jedis.exists("rest-storage:resources:project:server:test:test1:test2"), equalTo(false));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project", getNowAsDouble(), 9999999999999d).size(), equalTo(0));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project:server", getNowAsDouble(), 9999999999999d).size(), equalTo(0));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project:server:test", getNowAsDouble(), 9999999999999d).size(), equalTo(0));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project:server:test:test1", getNowAsDouble(), 9999999999999d).size(), equalTo(0));
+
+        // ARRANGE
+        evalScriptPut(":project:server:test:test1:test2", "{\"content\": \"test/test1/test2\"}");
+
+        assertThat(jedis.exists("rest-storage:resources:project:server:test:test1:test2"), equalTo(true));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project", getNowAsDouble(), 9999999999999d).size(), equalTo(1));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project:server", getNowAsDouble(), 9999999999999d).size(), equalTo(1));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project:server:test", getNowAsDouble(), 9999999999999d).size(), equalTo(1));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project:server:test:test1", getNowAsDouble(), 9999999999999d).size(), equalTo(1));
+
+        // ACT -> delete on level resource
+        value = (String) evalScriptDel(":project:server:test:test1:test2", false, false);
+
+        // ASSERT
+        assertThat(value, equalTo("deleted"));
+        assertThat(jedis.exists("rest-storage:resources:project:server:test:test1:test2"), equalTo(false));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project", getNowAsDouble(), 9999999999999d).size(), equalTo(0));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project:server", getNowAsDouble(), 9999999999999d).size(), equalTo(0));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project:server:test", getNowAsDouble(), 9999999999999d).size(), equalTo(0));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project:server:test:test1", getNowAsDouble(), 9999999999999d).size(), equalTo(0));
+    }
+
+    @Test
+    public void testNoConfirmCollectionDeleteAndDeleteRecursive() {
+
+        // ARRANGE
+        evalScriptPut(":project:server:test:test1:test2", "{\"content\": \"test/test1/test2\"}");
+
+        assertThat(jedis.exists("rest-storage:resources:project:server:test:test1:test2"), equalTo(true));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project", getNowAsDouble(), 9999999999999d).size(), equalTo(1));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project:server", getNowAsDouble(), 9999999999999d).size(), equalTo(1));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project:server:test", getNowAsDouble(), 9999999999999d).size(), equalTo(1));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project:server:test:test1", getNowAsDouble(), 9999999999999d).size(), equalTo(1));
+
+        // ACT -> delete on level collection
+        String value = (String) evalScriptDel(":project:server:test:test1", false, true);
+
+        // ASSERT
+        assertThat(value, equalTo("deleted"));
+        assertThat(jedis.exists("rest-storage:resources:project:server:test:test1:test2"), equalTo(false));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project", getNowAsDouble(), 9999999999999d).size(), equalTo(0));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project:server", getNowAsDouble(), 9999999999999d).size(), equalTo(0));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project:server:test", getNowAsDouble(), 9999999999999d).size(), equalTo(0));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project:server:test:test1", getNowAsDouble(), 9999999999999d).size(), equalTo(0));
+
+        // ARRANGE
+        evalScriptPut(":project:server:test:test1:test2", "{\"content\": \"test/test1/test2\"}");
+
+        assertThat(jedis.exists("rest-storage:resources:project:server:test:test1:test2"), equalTo(true));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project", getNowAsDouble(), 9999999999999d).size(), equalTo(1));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project:server", getNowAsDouble(), 9999999999999d).size(), equalTo(1));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project:server:test", getNowAsDouble(), 9999999999999d).size(), equalTo(1));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project:server:test:test1", getNowAsDouble(), 9999999999999d).size(), equalTo(1));
+
+        // ACT -> delete on level resource
+        value = (String) evalScriptDel(":project:server:test:test1:test2", false, true);
+
+        // ASSERT
+        assertThat(value, equalTo("deleted"));
+        assertThat(jedis.exists("rest-storage:resources:project:server:test:test1:test2"), equalTo(false));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project", getNowAsDouble(), 9999999999999d).size(), equalTo(0));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project:server", getNowAsDouble(), 9999999999999d).size(), equalTo(0));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project:server:test", getNowAsDouble(), 9999999999999d).size(), equalTo(0));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project:server:test:test1", getNowAsDouble(), 9999999999999d).size(), equalTo(0));
+    }
+
+    @Test
+    public void testConfirmCollectionDeleteAndNotDeleteRecursive() {
+
+        // ARRANGE
+        evalScriptPut(":project:server:test:test1:test2", "{\"content\": \"test/test1/test2\"}");
+
+        assertThat(jedis.exists("rest-storage:resources:project:server:test:test1:test2"), equalTo(true));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project", getNowAsDouble(), 9999999999999d).size(), equalTo(1));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project:server", getNowAsDouble(), 9999999999999d).size(), equalTo(1));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project:server:test", getNowAsDouble(), 9999999999999d).size(), equalTo(1));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project:server:test:test1", getNowAsDouble(), 9999999999999d).size(), equalTo(1));
+
+        // ACT -> delete on level collection
+        String value = (String) evalScriptDel(":project:server:test:test1", true, false);
+
+        // ASSERT
+        assertThat(value, equalTo("notEmpty"));
+        assertThat(jedis.exists("rest-storage:resources:project:server:test:test1:test2"), equalTo(true));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project", getNowAsDouble(), 9999999999999d).size(), equalTo(1));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project:server", getNowAsDouble(), 9999999999999d).size(), equalTo(1));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project:server:test", getNowAsDouble(), 9999999999999d).size(), equalTo(1));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project:server:test:test1", getNowAsDouble(), 9999999999999d).size(), equalTo(1));
+
+        // ARRANGE
+        evalScriptPut(":project:server:test:test1:test2", "{\"content\": \"test/test1/test2\"}");
+
+        assertThat(jedis.exists("rest-storage:resources:project:server:test:test1:test2"), equalTo(true));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project", getNowAsDouble(), 9999999999999d).size(), equalTo(1));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project:server", getNowAsDouble(), 9999999999999d).size(), equalTo(1));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project:server:test", getNowAsDouble(), 9999999999999d).size(), equalTo(1));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project:server:test:test1", getNowAsDouble(), 9999999999999d).size(), equalTo(1));
+
+        // ACT -> delete on level resource
+        value = (String) evalScriptDel(":project:server:test:test1:test2", true, false);
+
+        // ASSERT
+        assertThat(value, equalTo("deleted"));
+        assertThat(jedis.exists("rest-storage:resources:project:server:test:test1:test2"), equalTo(false));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project", getNowAsDouble(), 9999999999999d).size(), equalTo(0));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project:server", getNowAsDouble(), 9999999999999d).size(), equalTo(0));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project:server:test", getNowAsDouble(), 9999999999999d).size(), equalTo(0));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project:server:test:test1", getNowAsDouble(), 9999999999999d).size(), equalTo(0));
+    }
+
+    @Test
+    public void testConfirmCollectionDeleteAndDeleteRecursive() {
+
+        // ARRANGE
+        evalScriptPut(":project:server:test:test1:test2", "{\"content\": \"test/test1/test2\"}");
+
+        assertThat(jedis.exists("rest-storage:resources:project:server:test:test1:test2"), equalTo(true));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project", getNowAsDouble(), 9999999999999d).size(), equalTo(1));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project:server", getNowAsDouble(), 9999999999999d).size(), equalTo(1));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project:server:test", getNowAsDouble(), 9999999999999d).size(), equalTo(1));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project:server:test:test1", getNowAsDouble(), 9999999999999d).size(), equalTo(1));
+
+        // ACT -> delete on level collection
+        String value = (String) evalScriptDel(":project:server:test:test1", true, true);
+
+        // ASSERT
+        assertThat(value, equalTo("deleted"));
+        assertThat(jedis.exists("rest-storage:resources:project:server:test:test1:test2"), equalTo(false));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project", getNowAsDouble(), 9999999999999d).size(), equalTo(0));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project:server", getNowAsDouble(), 9999999999999d).size(), equalTo(0));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project:server:test", getNowAsDouble(), 9999999999999d).size(), equalTo(0));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project:server:test:test1", getNowAsDouble(), 9999999999999d).size(), equalTo(0));
+
+        // ARRANGE
+        evalScriptPut(":project:server:test:test1:test2", "{\"content\": \"test/test1/test2\"}");
+
+        assertThat(jedis.exists("rest-storage:resources:project:server:test:test1:test2"), equalTo(true));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project", getNowAsDouble(), 9999999999999d).size(), equalTo(1));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project:server", getNowAsDouble(), 9999999999999d).size(), equalTo(1));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project:server:test", getNowAsDouble(), 9999999999999d).size(), equalTo(1));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project:server:test:test1", getNowAsDouble(), 9999999999999d).size(), equalTo(1));
+
+        // ACT -> delete on level resource
+        value = (String) evalScriptDel(":project:server:test:test1:test2", true, true);
+
+        // ASSERT
+        assertThat(value, equalTo("deleted"));
+        assertThat(jedis.exists("rest-storage:resources:project:server:test:test1:test2"), equalTo(false));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project", getNowAsDouble(), 9999999999999d).size(), equalTo(0));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project:server", getNowAsDouble(), 9999999999999d).size(), equalTo(0));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project:server:test", getNowAsDouble(), 9999999999999d).size(), equalTo(0));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project:server:test:test1", getNowAsDouble(), 9999999999999d).size(), equalTo(0));
+    }
+
+
     @SuppressWarnings({ "rawtypes", "unchecked", "serial" })
     private String evalScriptDel(final String resourceName, final String lockOwner, LockMode lockMode, long lockExpire) {
         String delScript = readScript("del.lua");
@@ -356,6 +533,8 @@ public class RedisDelLuaScriptTests extends AbstractLuaScriptTest {
                         add(expirableSet);
                         add("0");
                         add("9999999999999");
+                        add("false");
+                        add("false");
                         add(prefixLock);
                         add(lockOwner);
                         add(lockMode.text());
@@ -368,8 +547,8 @@ public class RedisDelLuaScriptTests extends AbstractLuaScriptTest {
 
     @SuppressWarnings({ "rawtypes", "unchecked", "serial" })
     private Object evalScriptDel(final String resourceName) {
-        String putScript = readScript("del.lua");
-        return jedis.eval(putScript, new ArrayList() {
+        String delScript = readScript("del.lua");
+        return jedis.eval(delScript, new ArrayList() {
             {
                 add(resourceName);
             }
@@ -383,6 +562,33 @@ public class RedisDelLuaScriptTests extends AbstractLuaScriptTest {
                         add(expirableSet);
                         add("0");
                         add("9999999999999");
+                        add("false");
+                        add("false");
+                        add(prefixLock);
+                    }
+                }
+        );
+    }
+
+    @SuppressWarnings({ "rawtypes", "unchecked", "serial" })
+    private Object evalScriptDel(final String resourceName, boolean confirmCollectionDelete, boolean deleteRecursive) {
+        String delScript = readScript("del.lua");
+        return jedis.eval(delScript, new ArrayList() {
+                    {
+                        add(resourceName);
+                    }
+                },
+                new ArrayList() {
+                    {
+                        add(prefixResources);
+                        add(prefixCollections);
+                        add(prefixDeltaResources);
+                        add(prefixDeltaEtags);
+                        add(expirableSet);
+                        add("0");
+                        add("9999999999999");
+                        add(confirmCollectionDelete ? "true" : "false");
+                        add(deleteRecursive ? "true" : "false");
                         add(prefixLock);
                     }
                 }
@@ -405,6 +611,8 @@ public class RedisDelLuaScriptTests extends AbstractLuaScriptTest {
                 add(expirableSet);
                 add(getNowAsString());
                 add(String.valueOf(MAX_EXPIRE_IN_MILLIS));
+                add("false");
+                add("false");
                 add(prefixLock);
             }
         }

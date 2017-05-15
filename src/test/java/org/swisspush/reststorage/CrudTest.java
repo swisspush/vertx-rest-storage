@@ -88,7 +88,31 @@ public class CrudTest extends RedisStorageTestCase {
         checkGETStatusCodeWithAwait5sec("branch1/res/leaf", 200);
         checkGETStatusCodeWithAwait5sec("branch2/res/leaf", 200);
 
-        delete("branch2");
+        delete("branch2").then().assertThat().statusCode(400).body(equalTo("Bad Request: directory not empty. Use recursive=true parameter to delete"));
+        checkGETStatusCodeWithAwait5sec("branch2", 200);
+
+        RestAssured.basePath = "";
+
+        when().get("branch1").then().assertThat().statusCode(200);
+        when().get("branch1/res").then().assertThat().statusCode(200);
+        when().get("branch1/res/leaf").then().assertThat().statusCode(200).body("foo", equalTo("bar1"));
+        when().get("branch2").then().assertThat().statusCode(200);
+        when().get("branch2/res").then().assertThat().statusCode(200);
+        when().get("branch2/res/leaf").then().assertThat().statusCode(200);
+
+        delete("branch2/res/leaf");
+        async.complete();
+    }
+
+    @Test
+    public void testTwoBranchesDeleteOnLeafOfOneBranchRecursive(TestContext context) {
+        Async async = context.async();
+        with().body("{ \"foo\": \"bar1\" }").put("branch1/res/leaf");
+        with().body("{ \"foo\": \"bar2\" }").put("branch2/res/leaf");
+        checkGETStatusCodeWithAwait5sec("branch1/res/leaf", 200);
+        checkGETStatusCodeWithAwait5sec("branch2/res/leaf", 200);
+
+        with().param("recursive", "true").delete("branch2");
         checkGETStatusCodeWithAwait5sec("branch2", 404);
 
         RestAssured.basePath = "";
@@ -112,7 +136,31 @@ public class CrudTest extends RedisStorageTestCase {
         checkGETStatusCodeWithAwait5sec("branch1/res/res1/leaf", 200);
         checkGETStatusCodeWithAwait5sec("branch2/res/res2/leaf", 200);
 
-        delete("branch2/res");
+        delete("branch2/res").then().assertThat().statusCode(400).body(equalTo("Bad Request: directory not empty. Use recursive=true parameter to delete"));
+        checkGETStatusCodeWithAwait5sec("branch2/res", 200);
+
+        RestAssured.basePath = "";
+
+        when().get("branch1").then().assertThat().statusCode(200);
+        when().get("branch1/res").then().assertThat().statusCode(200);
+        when().get("branch1/res/res1/").then().assertThat().statusCode(200);
+        when().get("branch1/res/res1/leaf").then().assertThat().statusCode(200).body("foo", equalTo("bar1"));
+        when().get("branch2").then().assertThat().statusCode(200);
+        when().get("branch2/res").then().assertThat().statusCode(200);
+        when().get("branch2/res/res2").then().assertThat().statusCode(200);
+        when().get("branch2/res/res2/leaf").then().assertThat().statusCode(200);
+        async.complete();
+    }
+
+    @Test
+    public void testTwoBranchesDeleteOnNodeUnderLeafOfOneBranchRecursive(TestContext context) {
+        Async async = context.async();
+        with().body("{ \"foo\": \"bar1\" }").put("branch1/res/res1/leaf");
+        with().body("{ \"foo\": \"bar2\" }").put("branch2/res/res2/leaf");
+        checkGETStatusCodeWithAwait5sec("branch1/res/res1/leaf", 200);
+        checkGETStatusCodeWithAwait5sec("branch2/res/res2/leaf", 200);
+
+        with().param("recursive", "true").delete("branch2/res");
         checkGETStatusCodeWithAwait5sec("branch2/res", 404);
 
         RestAssured.basePath = "";
@@ -136,7 +184,29 @@ public class CrudTest extends RedisStorageTestCase {
         checkGETStatusCodeWithAwait5sec("branch1/res/res1/leaf", 200);
         checkGETStatusCodeWithAwait5sec("branch2/res/res2/leaf", 200);
 
-        delete("branch1/res");
+        delete("branch1/res").then().assertThat().statusCode(400).body(equalTo("Bad Request: directory not empty. Use recursive=true parameter to delete"));
+        checkGETStatusCodeWithAwait5sec("branch1/res", 200);
+
+        RestAssured.basePath = "";
+
+        when().get("branch2").then().assertThat().statusCode(200);
+        when().get("branch2/res").then().assertThat().statusCode(200);
+        when().get("branch2/res/res2/leaf").then().assertThat().statusCode(200).body("foo", equalTo("bar2"));
+        when().get("branch1").then().assertThat().statusCode(200);
+        when().get("branch1/res").then().assertThat().statusCode(200);
+        when().get("branch1/res/res1/leaf").then().assertThat().statusCode(200);
+        async.complete();
+    }
+
+    @Test
+    public void testTwoBranchesDeleteOnNodeAfterBranchRecursive(TestContext context) {
+        Async async = context.async();
+        with().body("{ \"foo\": \"bar1\" }").put("branch1/res/res1/leaf");
+        with().body("{ \"foo\": \"bar2\" }").put("branch2/res/res2/leaf");
+        checkGETStatusCodeWithAwait5sec("branch1/res/res1/leaf", 200);
+        checkGETStatusCodeWithAwait5sec("branch2/res/res2/leaf", 200);
+
+        with().param("recursive", "true").delete("branch1/res").then().assertThat().statusCode(200);
         checkGETStatusCodeWithAwait5sec("branch1/res", 404);
 
         RestAssured.basePath = "";
@@ -161,7 +231,32 @@ public class CrudTest extends RedisStorageTestCase {
 
         RestAssured.basePath = "";
 
-        delete("/");
+        delete("/").then().assertThat().statusCode(400).body(equalTo("Bad Request: directory not empty. Use recursive=true parameter to delete"));
+        checkGETStatusCodeWithAwait5sec("/", 200);
+
+        when().get("node").then().assertThat().statusCode(200);
+        when().get("node/node").then().assertThat().statusCode(200);
+        when().get("node/node/node").then().assertThat().statusCode(200);
+        when().get("node/node/node/branch2").then().assertThat().statusCode(200);
+        when().get("node/node/node/branch2/res").then().assertThat().statusCode(200);
+        when().get("node/node/node/branch2/res/res2/leaf").then().assertThat().statusCode(200);
+        when().get("node/node/node/branch1").then().assertThat().statusCode(200);
+        when().get("node/node/node/branch1/res").then().assertThat().statusCode(200);
+        when().get("node/node/node/branch1/res/res1/leaf").then().assertThat().statusCode(200);
+        async.complete();
+    }
+
+    @Test
+    public void testTwoBranchesDeleteOnRootRecursive(TestContext context) {
+        Async async = context.async();
+        with().body("{ \"foo\": \"bar\" }").put("node/node/node/branch1/res/res1/leaf");
+        with().body("{ \"foo\": \"bar\" }").put("node/node/node/branch2/res/res2/leaf");
+        checkGETStatusCodeWithAwait5sec("node/node/node/branch1/res/res1/leaf", 200);
+        checkGETStatusCodeWithAwait5sec("node/node/node/branch2/res/res2/leaf", 200);
+
+        RestAssured.basePath = "";
+
+        with().param("recursive", "true").delete("/").then().assertThat().statusCode(200);
         checkGETStatusCodeWithAwait5sec("/", 404);
 
         when().get("node").then().assertThat().statusCode(404);
@@ -176,7 +271,6 @@ public class CrudTest extends RedisStorageTestCase {
         when().get("node/node/node/branch1/res/res1/leaf").then().assertThat().statusCode(404);
         async.complete();
     }
-
 
     @Test
     public void testThreeBranchesDeleteOnLeafOfOneBranch(TestContext context) {
@@ -215,7 +309,37 @@ public class CrudTest extends RedisStorageTestCase {
         checkGETStatusCodeWithAwait5sec("branch2/res/res2/leaf", 200);
         checkGETStatusCodeWithAwait5sec("branch3/res/res3/leaf", 200);
 
-        delete("branch1/res");
+        delete("branch1/res").then().assertThat().statusCode(400).body(equalTo("Bad Request: directory not empty. Use recursive=true parameter to delete"));
+        checkGETStatusCodeWithAwait5sec("branch1/res", 200);
+
+        RestAssured.basePath = "";
+
+        when().get("/branch1").then().assertThat().statusCode(200);
+        when().get("/branch1/res").then().assertThat().statusCode(200);
+        when().get("/branch1/res/res1/").then().assertThat().statusCode(200);
+        when().get("/branch1/res/res1/leaf").then().assertThat().statusCode(200);
+        when().get("/branch2").then().assertThat().statusCode(200);
+        when().get("/branch2/res").then().assertThat().statusCode(200);
+        when().get("/branch2/res/res2").then().assertThat().statusCode(200);
+        when().get("/branch2/res/res2/leaf").then().assertThat().statusCode(200).body("foo", equalTo("bar2"));
+        when().get("/branch3").then().assertThat().statusCode(200);
+        when().get("/branch3/res").then().assertThat().statusCode(200);
+        when().get("/branch3/res/res3").then().assertThat().statusCode(200);
+        when().get("/branch3/res/res3/leaf").then().assertThat().statusCode(200).body("foo", equalTo("bar3"));
+        async.complete();
+    }
+
+    @Test
+    public void testThreeBranchesDeleteOnNodeUnderLeafOfOneBranchRecursive(TestContext context) {
+        Async async = context.async();
+        with().body("{ \"foo\": \"bar1\" }").put("branch1/res/res1/leaf");
+        with().body("{ \"foo\": \"bar2\" }").put("branch2/res/res2/leaf");
+        with().body("{ \"foo\": \"bar3\" }").put("branch3/res/res3/leaf");
+        checkGETStatusCodeWithAwait5sec("branch1/res/res1/leaf", 200);
+        checkGETStatusCodeWithAwait5sec("branch2/res/res2/leaf", 200);
+        checkGETStatusCodeWithAwait5sec("branch3/res/res3/leaf", 200);
+
+        with().param("recursive", "true").delete("branch1/res").then().assertThat().statusCode(200);
         checkGETStatusCodeWithAwait5sec("branch1/res", 404);
 
         RestAssured.basePath = "";
@@ -245,7 +369,38 @@ public class CrudTest extends RedisStorageTestCase {
         checkGETStatusCodeWithAwait5sec("branch2/res/res2/leaf", 200);
         checkGETStatusCodeWithAwait5sec("branch3/res/res3/leaf", 200);
 
-        delete("branch2/res");
+        delete("branch2/res").then().assertThat().statusCode(400).body(equalTo("Bad Request: directory not empty. Use recursive=true parameter to delete"));
+        checkGETStatusCodeWithAwait5sec("branch2/res", 200);
+
+        RestAssured.basePath = "";
+
+
+        when().get("branch1").then().assertThat().statusCode(200);
+        when().get("branch1/res").then().assertThat().statusCode(200);
+        when().get("branch1/res/res1").then().assertThat().statusCode(200);
+        when().get("branch1/res/res1/leaf").then().assertThat().statusCode(200).body("foo", equalTo("bar1"));
+        when().get("branch2").then().assertThat().statusCode(200);
+        when().get("branch2/res").then().assertThat().statusCode(200);
+        when().get("branch2/res/res2").then().assertThat().statusCode(200);
+        when().get("branch2/res/res2/leaf").then().assertThat().statusCode(200);
+        when().get("branch3").then().assertThat().statusCode(200);
+        when().get("branch3/res").then().assertThat().statusCode(200);
+        when().get("branch3/res/res3").then().assertThat().statusCode(200);
+        when().get("branch3/res/res3/leaf").then().assertThat().statusCode(200).body("foo", equalTo("bar3"));
+        async.complete();
+    }
+
+    @Test
+    public void testThreeBranchesDeleteOnNodeAfterBranchRecursive(TestContext context) {
+        Async async = context.async();
+        with().body("{ \"foo\": \"bar1\" }").put("branch1/res/res1/leaf");
+        with().body("{ \"foo\": \"bar2\" }").put("branch2/res/res2/leaf");
+        with().body("{ \"foo\": \"bar3\" }").put("branch3/res/res3/leaf");
+        checkGETStatusCodeWithAwait5sec("branch1/res/res1/leaf", 200);
+        checkGETStatusCodeWithAwait5sec("branch2/res/res2/leaf", 200);
+        checkGETStatusCodeWithAwait5sec("branch3/res/res3/leaf", 200);
+
+        with().param("recursive", "true").delete("branch2/res").then().assertThat().statusCode(200);
         checkGETStatusCodeWithAwait5sec("branch2/res", 404);
 
         RestAssured.basePath = "";
@@ -278,7 +433,37 @@ public class CrudTest extends RedisStorageTestCase {
 
         RestAssured.basePath = "";
 
-        delete("/");
+        delete("/").then().assertThat().statusCode(400).body(equalTo("Bad Request: directory not empty. Use recursive=true parameter to delete"));
+        checkGETStatusCodeWithAwait5sec("/", 200);
+
+        when().get("node").then().assertThat().statusCode(200);
+        when().get("node/node").then().assertThat().statusCode(200);
+        when().get("node/node/node").then().assertThat().statusCode(200);
+        when().get("node/node/node/branch2").then().assertThat().statusCode(200);
+        when().get("node/node/node/branch2/res").then().assertThat().statusCode(200);
+        when().get("node/node/node/branch2/res/res2/leaf").then().assertThat().statusCode(200);
+        when().get("node/node/node/branch1").then().assertThat().statusCode(200);
+        when().get("node/node/node/branch1/res").then().assertThat().statusCode(200);
+        when().get("node/node/node/branch1/res/res1/leaf").then().assertThat().statusCode(200);
+        when().get("node/node/node/branch3").then().assertThat().statusCode(200);
+        when().get("node/node/node/branch3/res").then().assertThat().statusCode(200);
+        when().get("node/node/node/branch3/res/res3/leaf").then().assertThat().statusCode(200);
+        async.complete();
+    }
+
+    @Test
+    public void testThreeBranchesDeleteOnRootRecursive(TestContext context) {
+        Async async = context.async();
+        with().body("{ \"foo\": \"bar\" }").put("node/node/node/branch1/res/res1/leaf");
+        with().body("{ \"foo\": \"bar\" }").put("node/node/node/branch2/res/res2/leaf");
+        with().body("{ \"foo\": \"bar\" }").put("node/node/node/branch3/res/res3/leaf");
+        checkGETStatusCodeWithAwait5sec("node/node/node/branch1/res/res1/leaf", 200);
+        checkGETStatusCodeWithAwait5sec("node/node/node/branch2/res/res2/leaf", 200);
+        checkGETStatusCodeWithAwait5sec("node/node/node/branch3/res/res3/leaf", 200);
+
+        RestAssured.basePath = "";
+
+        with().param("recursive", "true").delete("/").then().assertThat().statusCode(200);
         checkGETStatusCodeWithAwait5sec("/", 404);
 
         when().get("node").then().assertThat().statusCode(404);

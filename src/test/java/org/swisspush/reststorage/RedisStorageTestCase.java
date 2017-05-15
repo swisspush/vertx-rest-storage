@@ -30,6 +30,7 @@ public abstract class RedisStorageTestCase extends ConfigurableTestCase {
 
         ModuleConfiguration modConfig = ModuleConfiguration.with()
                 .storageType(ModuleConfiguration.StorageType.redis)
+                .confirmCollectionDelete(true)
                 .storageAddress("rest-storage")
                 .build();
 

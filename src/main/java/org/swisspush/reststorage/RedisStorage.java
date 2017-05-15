@@ -787,6 +787,8 @@ public class RedisStorage implements Storage {
                 expirableSet,
                 String.valueOf(System.currentTimeMillis()),
                 MAX_EXPIRE_IN_MILLIS,
+                confirmCollectionDelete ? "true" : "false",
+                deleteRecursive ? "true" : "false",
                 redisLockPrefix,
                 lockOwner,
                 lockMode.text(),
@@ -832,6 +834,10 @@ public class RedisStorage implements Storage {
                 if (log.isTraceEnabled()) {
                     log.trace("RedisStorage delete result: " + result);
                 }
+                if ("notEmpty".equals(result)) {
+                    notEmpty(handler);
+                    return;
+                }
                 if ("notFound".equals(result)) {
                     notFound(handler);
                     return;
@@ -864,6 +870,8 @@ public class RedisStorage implements Storage {
                 expirableSet,
                 "0",
                 MAX_EXPIRE_IN_MILLIS,
+                "false",
+                "true",
                 String.valueOf(System.currentTimeMillis()),
                 String.valueOf(bulkSize)
         );
@@ -944,6 +952,13 @@ public class RedisStorage implements Storage {
     private void notFound(Handler<Resource> handler) {
         Resource r = new Resource();
         r.exists = false;
+        handler.handle(r);
+    }
+
+    private void notEmpty(Handler<Resource> handler) {
+        Resource r = new Resource();
+        r.error = true;
+        r.errorMessage = "directory not empty. Use recursive=true parameter to delete";
         handler.handle(r);
     }
 

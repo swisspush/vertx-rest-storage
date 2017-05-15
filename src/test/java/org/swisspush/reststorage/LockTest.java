@@ -14,6 +14,7 @@ import java.util.Map;
 import static com.jayway.awaitility.Awaitility.await;
 import static com.jayway.restassured.RestAssured.*;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.core.Is.is;
 
 
@@ -448,7 +449,40 @@ public class LockTest extends RedisStorageTestCase {
         delete(path2).then().statusCode(StatusCode.CONFLICT.getStatusCode());
 
         // try to delete collection (should succeed)
-        delete(base).then().statusCode(StatusCode.OK.getStatusCode());
+        delete(base).then().assertThat().statusCode(400).body(equalTo("Bad Request: directory not empty. Use recursive=true parameter to delete"));
+        get(path2).then().assertThat().statusCode(StatusCode.OK.getStatusCode());
+
+        async.complete();
+    }
+
+    @Test
+    public void testDeleteCollectionWithLockedResourceRecursive(TestContext context) {
+        Async async = context.async();
+
+        String base = "/lock/test/lockcollection/";
+        String path1 = base + "res1";
+        String path2 = base + "res2";
+        String path3 = base + "res3";
+
+        String content1 = "{\"content\":\"res1\"}";
+        String content2 = "{\"content\":\"locked\"}";
+        String content3 = "{\"content\":\"res2\"}";
+
+        // create collection
+        given().body(content1).put(path1).then().assertThat().statusCode(StatusCode.OK.getStatusCode());
+        given()
+                .body(content2)
+                .headers(createLockHeaders("test", LockMode.REJECT, 10))
+                .put(path2)
+                .then()
+                .assertThat().statusCode(StatusCode.OK.getStatusCode());
+        given().body(content3).put(path3).then().assertThat().statusCode(StatusCode.OK.getStatusCode());
+
+        // try to delete resource (should fail)
+        delete(path2).then().statusCode(StatusCode.CONFLICT.getStatusCode());
+
+        // try to delete collection (should succeed)
+        with().param("recursive", "true").delete(base).then().statusCode(StatusCode.OK.getStatusCode());
         get(path2).then().assertThat().statusCode(StatusCode.NOT_FOUND.getStatusCode());
 
         async.complete();

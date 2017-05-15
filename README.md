@@ -81,6 +81,19 @@ The returned json response look like this:
 }
 ```
 
+### DELETE
+Invoking DELETE request on a leave (document) deletes the resource.
+> DELETE /storage/resources/resource_1
+
+Invoking DELETE request on a collection deletes the collection and all its childern.
+> DELETE /storage/resources/
+
+#### Parameters
+
+| Parameter | Description  |
+|:--------- | :----------- |
+| recursive | When configuration property _confirmCollectionDelete_ is set to _true_, the url parameter _recursive=true_ has to be added to delete collections. |
+
 ### StorageExpand
 
 The StorageExpand feature expands the hierarchical resources and returns them as a single concatenated json resource.
@@ -164,6 +177,7 @@ The following configuration values are available:
 | prefix | common | / | The part of the URL path before this handler (aka "context path" in JEE terminology) |
 | storageAddress | common | resource-storage | The eventbus address the mod listens to. |
 | editorConfig | common |  | Additional configuration values for the editor |
+| confirmCollectionDelete | common | false | When set to _true_, an additional _recursive=true_ url parameter has to be set to delete collections |
 | redisHost | redis | localhost | The host where redis is running on |
 | redisPort | redis | 6379 | The port where redis is running on |
 | expirablePrefix | redis | rest-storage:expirable | The prefix for expirable data redis keys |
