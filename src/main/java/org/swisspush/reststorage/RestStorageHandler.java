@@ -22,12 +22,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import static org.swisspush.reststorage.util.HttpRequestHeader.*;
+import static org.swisspush.reststorage.util.HttpRequestParam.*;
 
 public class RestStorageHandler implements Handler<HttpServerRequest> {
-
-    private static final String OFFSET_PARAMETER = "offset";
-    private static final String LIMIT_PARAMETER = "limit";
-    private static final String STORAGE_EXPAND_PARAMETER = "storageExpand";
 
     private Logger log;
     private Router router;
@@ -40,12 +37,15 @@ public class RestStorageHandler implements Handler<HttpServerRequest> {
     private String newMarker = "?new=true";
     private String prefixFixed;
     private String prefix;
+    private boolean confirmCollectionDelete;
 
-    public RestStorageHandler(Vertx vertx, final Logger log, final Storage storage, final String prefix, JsonObject editorConfig, final String lockPrefix) {
+    public RestStorageHandler(Vertx vertx, final Logger log, final Storage storage, final String prefix,
+                              JsonObject editorConfig, final String lockPrefix, final boolean confirmCollectionDelete) {
         this.router = Router.router(vertx);
         this.log = log;
         this.storage = storage;
         this.prefix = prefix;
+        this.confirmCollectionDelete = confirmCollectionDelete;
 
         prefixFixed = prefix.equals("/") ? "" : prefix;
 
@@ -112,14 +112,15 @@ public class RestStorageHandler implements Handler<HttpServerRequest> {
         ctx.response().end(StatusCode.NOT_FOUND.toString());
     }
 
-    private void getResource(RoutingContext ctx){
+    private void getResource(RoutingContext ctx) {
         final String path = cleanPath(ctx.request().path().substring(prefixFixed.length()));
         final String etag = ctx.request().headers().get(IF_NONE_MATCH_HEADER.getName());
         if (log.isTraceEnabled()) {
             log.trace("RestStorageHandler got GET Request path: " + path + " etag: " + etag);
         }
-        String offsetFromUrl = ctx.request().params().get(OFFSET_PARAMETER);
-        String limitFromUrl = ctx.request().params().get(LIMIT_PARAMETER);
+        MultiMap params = ctx.request().params();
+        String offsetFromUrl = getString(params, OFFSET_PARAMETER);
+        String limitFromUrl = getString(params, LIMIT_PARAMETER);
         OffsetLimit offsetLimit = UrlParser.offsetLimit(offsetFromUrl, limitFromUrl);
         storage.get(path, etag, offsetLimit.offset, offsetLimit.limit, new Handler<Resource>() {
             public void handle(Resource resource) {
@@ -127,11 +128,11 @@ public class RestStorageHandler implements Handler<HttpServerRequest> {
                     log.trace("RestStorageHandler resource exists: " + resource.exists);
                 }
 
-                if(resource.error){
+                if (resource.error) {
                     ctx.response().setStatusCode(StatusCode.INTERNAL_SERVER_ERROR.getStatusCode());
                     ctx.response().setStatusMessage(StatusCode.INTERNAL_SERVER_ERROR.getStatusMessage());
                     String message = StatusCode.INTERNAL_SERVER_ERROR.getStatusMessage();
-                    if(resource.errorMessage != null){
+                    if (resource.errorMessage != null) {
                         message = resource.errorMessage;
                     }
                     ctx.response().end(message);
@@ -325,8 +326,7 @@ public class RestStorageHandler implements Handler<HttpServerRequest> {
             if (containsHeader(headers, LOCK_MODE_HEADER)) {
                 try {
                     lockMode = LockMode.valueOf(headers.get(LOCK_MODE_HEADER.getName()).toUpperCase());
-                }
-                catch (IllegalArgumentException e) {
+                } catch (IllegalArgumentException e) {
                     ctx.request().resume();
                     ctx.response().setStatusCode(StatusCode.BAD_REQUEST.getStatusCode());
                     ctx.response().setStatusMessage("Invalid " + LOCK_MODE_HEADER.getName() + " header: " + headers.get(LOCK_MODE_HEADER.getName()));
@@ -338,7 +338,7 @@ public class RestStorageHandler implements Handler<HttpServerRequest> {
 
             if (containsHeader(headers, LOCK_EXPIRE_AFTER_HEADER)) {
                 lockExpire = getLong(headers, LOCK_EXPIRE_AFTER_HEADER);
-                if(lockExpire == null){
+                if (lockExpire == null) {
                     ctx.request().resume();
                     ctx.response().setStatusCode(StatusCode.BAD_REQUEST.getStatusCode());
                     ctx.response().setStatusMessage("Invalid " + LOCK_EXPIRE_AFTER_HEADER.getName() + " header: " + headers.get(LOCK_EXPIRE_AFTER_HEADER.getName()));
@@ -356,7 +356,7 @@ public class RestStorageHandler implements Handler<HttpServerRequest> {
 
         boolean storeCompressed = Boolean.parseBoolean(headers.get(COMPRESS_HEADER.getName()));
 
-        if(merge && storeCompressed){
+        if (merge && storeCompressed) {
             ctx.request().resume();
             ctx.response().setStatusCode(StatusCode.BAD_REQUEST.getStatusCode());
             ctx.response().setStatusMessage("Invalid parameter/header combination: merge parameter and " + COMPRESS_HEADER.getName() + " header cannot be used concurrently");
@@ -367,11 +367,11 @@ public class RestStorageHandler implements Handler<HttpServerRequest> {
         storage.put(path, etag, merge, expire, lock, lockMode, lockExpire, storeCompressed, resource -> {
             ctx.request().resume();
 
-            if(resource.error){
+            if (resource.error) {
                 ctx.response().setStatusCode(StatusCode.INTERNAL_SERVER_ERROR.getStatusCode());
                 ctx.response().setStatusMessage(StatusCode.INTERNAL_SERVER_ERROR.getStatusMessage());
                 String message = StatusCode.INTERNAL_SERVER_ERROR.getStatusMessage();
-                if(resource.errorMessage != null){
+                if (resource.errorMessage != null) {
                     message = resource.errorMessage;
                 }
                 ctx.response().end(message);
@@ -431,6 +431,7 @@ public class RestStorageHandler implements Handler<HttpServerRequest> {
         LockMode lockMode = LockMode.SILENT; // default
 
         MultiMap headers = ctx.request().headers();
+        MultiMap params = ctx.request().params();
 
         if (containsHeader(headers, LOCK_HEADER)) {
             lock = headers.get(LOCK_HEADER.getName());
@@ -438,8 +439,7 @@ public class RestStorageHandler implements Handler<HttpServerRequest> {
             if (containsHeader(headers, LOCK_MODE_HEADER)) {
                 try {
                     lockMode = LockMode.valueOf(headers.get(LOCK_MODE_HEADER.getName()).toUpperCase());
-                }
-                catch (IllegalArgumentException e) {
+                } catch (IllegalArgumentException e) {
                     ctx.request().resume();
                     ctx.response().setStatusCode(StatusCode.BAD_REQUEST.getStatusCode());
                     ctx.response().setStatusMessage("Invalid " + LOCK_MODE_HEADER.getName() + " header: " + headers.get(LOCK_MODE_HEADER.getName()));
@@ -451,7 +451,7 @@ public class RestStorageHandler implements Handler<HttpServerRequest> {
 
             if (containsHeader(headers, LOCK_EXPIRE_AFTER_HEADER)) {
                 lockExpire = getLong(headers, LOCK_EXPIRE_AFTER_HEADER);
-                if(lockExpire == null) {
+                if (lockExpire == null) {
                     ctx.request().resume();
                     ctx.response().setStatusCode(StatusCode.BAD_REQUEST.getStatusCode());
                     ctx.response().setStatusMessage("Invalid " + LOCK_EXPIRE_AFTER_HEADER.getName() + " header: " + headers.get(LOCK_EXPIRE_AFTER_HEADER.getName()));
@@ -462,23 +462,24 @@ public class RestStorageHandler implements Handler<HttpServerRequest> {
             }
         }
 
-        storage.delete(path, lock, lockMode, lockExpire, resource -> {
-            if (resource.rejected) {
-                ctx.response().setStatusCode(StatusCode.CONFLICT.getStatusCode());
-                ctx.response().setStatusMessage(StatusCode.CONFLICT.getStatusMessage());
-                ctx.response().end();
-            } else if (!resource.exists) {
-                ctx.request().response().setStatusCode(StatusCode.NOT_FOUND.getStatusCode());
-                ctx.request().response().setStatusMessage(StatusCode.NOT_FOUND.getStatusMessage());
-                ctx.request().response().end(StatusCode.NOT_FOUND.toString());
-            } else {
-                ctx.request().response().end();
-            }
-        });
+        storage.delete(path, lock, lockMode, lockExpire, confirmCollectionDelete, getBoolean(params, RECURSIVE_PARAMETER),
+                resource -> {
+                    if (resource.rejected) {
+                        ctx.response().setStatusCode(StatusCode.CONFLICT.getStatusCode());
+                        ctx.response().setStatusMessage(StatusCode.CONFLICT.getStatusMessage());
+                        ctx.response().end();
+                    } else if (!resource.exists) {
+                        ctx.request().response().setStatusCode(StatusCode.NOT_FOUND.getStatusCode());
+                        ctx.request().response().setStatusMessage(StatusCode.NOT_FOUND.getStatusMessage());
+                        ctx.request().response().end(StatusCode.NOT_FOUND.toString());
+                    } else {
+                        ctx.request().response().end();
+                    }
+                });
     }
 
-    private void storageExpand(RoutingContext ctx){
-        if (!ctx.request().params().contains(STORAGE_EXPAND_PARAMETER)) {
+    private void storageExpand(RoutingContext ctx) {
+        if (!containsParam(ctx.request().params(), STORAGE_EXPAND_PARAMETER)) {
             respondWithNotAllowed(ctx.request());
         } else {
             ctx.request().bodyHandler(new Handler<Buffer>() {
@@ -497,7 +498,7 @@ public class RestStorageHandler implements Handler<HttpServerRequest> {
                             subResourceNames.add(subResourcesArray.getString(i));
                         }
                         ResourceNameUtil.replaceColonsAndSemiColonsInList(subResourceNames);
-                    } catch(RuntimeException ex){
+                    } catch (RuntimeException ex) {
                         respondWithBadRequest(ctx.request(), "Bad Request: Unable to parse body of storageExpand POST request");
                         return;
                     }
@@ -506,23 +507,23 @@ public class RestStorageHandler implements Handler<HttpServerRequest> {
                     final String etag = ctx.request().headers().get(IF_NONE_MATCH_HEADER.getName());
                     storage.storageExpand(path, etag, subResourceNames, resource -> {
 
-                        if(resource.error){
+                        if (resource.error) {
                             ctx.response().setStatusCode(StatusCode.CONFLICT.getStatusCode());
                             ctx.response().setStatusMessage(StatusCode.CONFLICT.getStatusMessage());
                             String message = StatusCode.CONFLICT.getStatusMessage();
-                            if(resource.errorMessage != null){
+                            if (resource.errorMessage != null) {
                                 message = resource.errorMessage;
                             }
                             ctx.response().end(message);
                             return;
                         }
 
-                        if(resource.invalid){
+                        if (resource.invalid) {
                             ctx.response().setStatusCode(StatusCode.INTERNAL_SERVER_ERROR.getStatusCode());
                             ctx.response().setStatusMessage(StatusCode.INTERNAL_SERVER_ERROR.getStatusMessage());
 
                             String message = StatusCode.INTERNAL_SERVER_ERROR.getStatusMessage();
-                            if(resource.invalidMessage != null){
+                            if (resource.invalidMessage != null) {
                                 message = resource.invalidMessage;
                             }
                             ctx.response().end(new JsonObject().put("error", message).encode());

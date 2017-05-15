@@ -772,7 +772,8 @@ public class RedisStorage implements Storage {
     }
 
     @Override
-    public void delete(String path, String lockOwner, LockMode lockMode, long lockExpire, final Handler<Resource> handler ) {
+    public void delete(String path, String lockOwner, LockMode lockMode, long lockExpire, boolean confirmCollectionDelete,
+                       boolean deleteRecursive, final Handler<Resource> handler ) {
         final String key = encodePath(path);
         List<String> keys = Collections.singletonList(key);
 

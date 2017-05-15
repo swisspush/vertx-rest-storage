@@ -88,6 +88,7 @@ public enum HttpRequestHeader {
      *
      * <ul>
      *     <li>headers are <code>null</code></li>
+     *     <li>headers does not contain httpRequestHeader</li>
      * </ul>
      *
      * @param headers the http request headers

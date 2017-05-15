@@ -152,11 +152,19 @@ public class FileSystemStorage implements Storage {
     }
 
     @Override
-    public void delete(String path, String lockOwner, LockMode lockMode, long lockExpire, final Handler<Resource> handler ) {
+    public void delete(String path, String lockOwner, LockMode lockMode, long lockExpire, boolean confirmCollectionDelete,
+                       boolean deleteRecursive, final Handler<Resource> handler ) {
         final String fullPath = canonicalize(path);
+
+        boolean deleteRecursiveInFileSystem = true;
+        if(confirmCollectionDelete && !deleteRecursive){
+            deleteRecursiveInFileSystem = false;
+        }
+        boolean finalDeleteRecursiveInFileSystem = deleteRecursiveInFileSystem;
+
         fileSystem().exists(fullPath, event -> {
             if (event.result()) {
-                fileSystem().deleteRecursive(fullPath, true, event1 -> {
+                fileSystem().deleteRecursive(fullPath, finalDeleteRecursiveInFileSystem, event1 -> {
                     Resource resource = new Resource();
                     if (event1.failed()) {
                         resource.exists = false;
