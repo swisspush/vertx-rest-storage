@@ -9,14 +9,12 @@ import io.vertx.core.Vertx;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 import org.swisspush.reststorage.util.ModuleConfiguration;
 import redis.clients.jedis.Jedis;
 
-import static org.swisspush.reststorage.util.HttpRequestHeader.*;
+import static org.swisspush.reststorage.util.HttpRequestHeader.CONTENT_TYPE;
 
 @RunWith(VertxUnitRunner.class)
 public abstract class AbstractTestCase {
@@ -31,20 +29,6 @@ public abstract class AbstractTestCase {
             .setPort(8989)
             .setBasePath("/")
             .build();
-
-    @BeforeClass
-    public static void config() {
-        if(!RedisEmbeddedConfiguration.useExternalRedis()) {
-            RedisEmbeddedConfiguration.redisServer.start();
-        }
-    }
-
-    @AfterClass
-    public static void stopRedis() {
-        if(!RedisEmbeddedConfiguration.useExternalRedis()) {
-            RedisEmbeddedConfiguration.redisServer.stop();
-        }
-    }
 
     @Before
     public void setUp(TestContext context) {

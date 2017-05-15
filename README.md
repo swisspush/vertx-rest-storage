@@ -28,9 +28,15 @@ Runs either as a module or can be integrated into an existing application by ins
 
 ## Run it
 1. clone the repository.
-1. run `gradle build -x test`
-1. run the fatjar with `java -jar build/libs/rest-storage-x.x.x-all.jar
-1. you get a rest-storage, that stores to the filesystem in the directory where you started it. If you want to use the rest-storage with redis, you have to pass the configuration over a json file with `-conf conf.json`
+2. Install and start Redis
+  * Debian/Ubuntu: `apt-get install redis-server`
+  * Fedora/RedHat/CentOS: `yum install redis`
+  * OS X: `brew install redis`
+  * [Windows](https://github.com/MSOpenTech/redis/releases/download/win-2.8.2400/Redis-x64-2.8.2400.zip)
+  * [Other](http://redis.io/download)
+3. run `gradle build -x test`
+4. run the fatjar with `java -jar build/libs/rest-storage-x.x.x-all.jar
+5. you get a rest-storage, that stores to the filesystem in the directory where you started it. If you want to use the rest-storage with redis, you have to pass the configuration over a json file with `-conf conf.json`
 
 ## Features
 ### GET
