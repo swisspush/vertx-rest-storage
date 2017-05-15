@@ -16,7 +16,7 @@ import static org.hamcrest.Matchers.*;
 import static org.hamcrest.core.IsEqual.equalTo;
 
 @RunWith(VertxUnitRunner.class)
-public class ExpirationTest extends AbstractTestCase {
+public class ExpirationTest extends RedisStorageTestCase {
 
     @Test
     public void testPutInvalidExpireFloat(TestContext context) {

@@ -12,7 +12,7 @@ import static com.jayway.restassured.RestAssured.get;
 import static com.jayway.restassured.RestAssured.with;
 
 @RunWith(VertxUnitRunner.class)
-public class RedirectTest extends AbstractTestCase {
+public class RedirectTest extends RedisStorageTestCase {
 
     @Test
     public void testGetHTMLResourceWithoutTrailingSlash(TestContext testContext) throws InterruptedException {

@@ -468,6 +468,14 @@ public class RestStorageHandler implements Handler<HttpServerRequest> {
                         ctx.response().setStatusCode(StatusCode.CONFLICT.getStatusCode());
                         ctx.response().setStatusMessage(StatusCode.CONFLICT.getStatusMessage());
                         ctx.response().end();
+                    } else if (resource.error) {
+                        ctx.response().setStatusCode(StatusCode.BAD_REQUEST.getStatusCode());
+                        ctx.response().setStatusMessage(StatusCode.BAD_REQUEST.getStatusMessage());
+                        String message = StatusCode.BAD_REQUEST.getStatusMessage();
+                        if (resource.errorMessage != null) {
+                            message = message + ": " + resource.errorMessage;
+                        }
+                        ctx.response().end(message);
                     } else if (!resource.exists) {
                         ctx.request().response().setStatusCode(StatusCode.NOT_FOUND.getStatusCode());
                         ctx.request().response().setStatusMessage(StatusCode.NOT_FOUND.getStatusMessage());

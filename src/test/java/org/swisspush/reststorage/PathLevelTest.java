@@ -10,7 +10,7 @@ import org.junit.runner.RunWith;
 import static com.jayway.restassured.RestAssured.*;
 
 @RunWith(VertxUnitRunner.class)
-public class PathLevelTest extends AbstractTestCase {
+public class PathLevelTest extends RedisStorageTestCase {
 
     @Test
     public void testTryToPutResourceOverCollection(TestContext context) {

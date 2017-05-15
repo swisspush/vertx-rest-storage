@@ -23,7 +23,7 @@ import static org.hamcrest.core.Is.is;
  * @author https://github.com/ljucam [Mario Ljuca]
  */
 @RunWith(VertxUnitRunner.class)
-public class LockTest extends  AbstractTestCase {
+public class LockTest extends RedisStorageTestCase {
     private final String LOCK_HEADER = "x-lock";
     private final String LOCK_MODE_HEADER = "x-lock-mode";
     private final String LOCK_EXPIRE_AFTER_HEADER = "x-lock-expire-after";

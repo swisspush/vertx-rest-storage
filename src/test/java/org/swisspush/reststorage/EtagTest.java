@@ -12,7 +12,7 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.core.IsNot.not;
 
 @RunWith(VertxUnitRunner.class)
-public class EtagTest extends AbstractTestCase {
+public class EtagTest extends RedisStorageTestCase {
     private final String ETAG_HEADER = "Etag";
     private final String IF_NONE_MATCH_HEADER = "if-none-match";
     private final String EXPIRE_AFTER_HEADER = "x-expire-after";

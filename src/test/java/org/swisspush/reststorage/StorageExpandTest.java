@@ -23,7 +23,7 @@ import static org.hamcrest.Matchers.*;
 
 
 @RunWith(VertxUnitRunner.class)
-public class StorageExpandTest extends AbstractTestCase {
+public class StorageExpandTest extends RedisStorageTestCase {
 
     final String ETAG_HEADER = "Etag";
     final String IF_NONE_MATCH_HEADER = "if-none-match";

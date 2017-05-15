@@ -17,7 +17,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.hasItems;
 
 @RunWith(VertxUnitRunner.class)
-public class CrudTest extends AbstractTestCase {
+public class CrudTest extends RedisStorageTestCase {
 
     @Test
     public void testDoubleSlashesHandling(TestContext context) {
