@@ -11,12 +11,11 @@ import org.junit.runner.RunWith;
 import static com.jayway.restassured.RestAssured.*;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.swisspush.reststorage.util.HttpRequestHeader.COMPRESS_HEADER;
+import static org.swisspush.reststorage.util.HttpRequestHeader.IF_NONE_MATCH_HEADER;
 
 @RunWith(VertxUnitRunner.class)
-public class ResourceCompressionTest extends AbstractTestCase {
-
-    private final String COMPRESS_HEADER = "x-stored-compressed";
-    private final String IF_NONE_MATCH_HEADER = "if-none-match";
+public class ResourceCompressionTest extends RedisStorageTestCase {
 
     @Test
     public void testPutGetWithCompression(TestContext context) {
@@ -64,13 +63,13 @@ public class ResourceCompressionTest extends AbstractTestCase {
     public void testCompressAndMerge(TestContext context) {
         Async async = context.async();
         with()
-                .header(COMPRESS_HEADER, "true")
+                .header(COMPRESS_HEADER.getName(), "true")
                 .param("merge", "true")
                 .body("{ \"foo\": \"bar2\" }")
                 .put("res")
                 .then().assertThat()
                 .statusCode(400)
-                .body(containsString("Invalid parameter/header combination: merge parameter and " + COMPRESS_HEADER + " header cannot be used concurrently"));
+                .body(containsString("Invalid parameter/header combination: merge parameter and " + COMPRESS_HEADER.getName() + " header cannot be used concurrently"));
         async.complete();
     }
 
@@ -92,9 +91,9 @@ public class ResourceCompressionTest extends AbstractTestCase {
     }
 
     private void putResource(String body, boolean storeCompressed, int statusCode){
-        RequestSpecification spec = given().header(IF_NONE_MATCH_HEADER, "etag1");
+        RequestSpecification spec = given().header(IF_NONE_MATCH_HEADER.getName(), "etag1");
         if(storeCompressed){
-            spec = spec.header(COMPRESS_HEADER, "true");
+            spec = spec.header(COMPRESS_HEADER.getName(), "true");
         }
         spec.body(body).put("res").then().assertThat().statusCode(statusCode);
     }

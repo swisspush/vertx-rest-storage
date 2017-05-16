@@ -7,10 +7,12 @@ local deltaEtagsPrefix = ARGV[4]
 local expirableSet = ARGV[5]
 local minscore = tonumber(ARGV[6])
 local maxscore = tonumber(ARGV[7])
-local lockPrefix = ARGV[8]
-local lockOwner = ARGV[9]
-local lockMode = ARGV[10]
-local lockExpire = ARGV[11]
+local confirmCollectionDelete = ARGV[8]
+local deleteRecursive = ARGV[9]
+local lockPrefix = ARGV[10]
+local lockOwner = ARGV[11]
+local lockMode = ARGV[12]
+local lockExpire = ARGV[13]
 
 local function deleteChildrenAndItself(path)
     if redis.call('exists',resourcesPrefix..path) == 1 then
@@ -43,6 +45,11 @@ local scriptState = "notFound"
 
 local isResource = redis.call('exists',resourcesPrefix..toDelete)
 local isCollection = redis.call('exists',collectionsPrefix..toDelete)
+
+if confirmCollectionDelete == "true" and deleteRecursive == "false" and isCollection == 1 then
+    redis.log(redis.LOG_NOTICE, "delete on collection requires recursive=true parameter")
+    return "notEmpty"
+end
 
 if isResource == 1 or isCollection == 1 then
 

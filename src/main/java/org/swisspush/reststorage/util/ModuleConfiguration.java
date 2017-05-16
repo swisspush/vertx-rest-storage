@@ -24,6 +24,7 @@ public class ModuleConfiguration {
     private String deltaEtagsPrefix;
     private long resourceCleanupAmount;
     private String lockPrefix;
+    private boolean confirmCollectionDelete;
 
     public static final String PROP_ROOT = "root";
     public static final String PROP_STORAGE_TYPE = "storageType";
@@ -40,6 +41,7 @@ public class ModuleConfiguration {
     public static final String PROP_DELTA_ETAGS_PREFIX = "deltaEtagsPrefix";
     public static final String PROP_RES_CLEANUP_AMMOUNT = "resourceCleanupAmount";
     public static final String PROP_LOCK_PREFIX = "lockPrefix";
+    public static final String PROP_CONFIRM_COLLECTIONDELETE = "confirmCollectionDelete";
 
     public enum StorageType {
         filesystem, redis
@@ -56,7 +58,8 @@ public class ModuleConfiguration {
     public ModuleConfiguration(String root, StorageType storageType, int port, String prefix, String storageAddress,
                                JsonObject editorConfig, String redisHost, int redisPort, String expirablePrefix,
                                String resourcesPrefix, String collectionsPrefix, String deltaResourcesPrefix,
-                               String deltaEtagsPrefix, long resourceCleanupAmount, String lockPrefix) {
+                               String deltaEtagsPrefix, long resourceCleanupAmount, String lockPrefix,
+                               boolean confirmCollectionDelete) {
         this.root = root;
         this.storageType = storageType;
         this.port = port;
@@ -72,6 +75,7 @@ public class ModuleConfiguration {
         this.deltaEtagsPrefix = deltaEtagsPrefix;
         this.resourceCleanupAmount = resourceCleanupAmount;
         this.lockPrefix = lockPrefix;
+        this.confirmCollectionDelete = confirmCollectionDelete;
     }
 
     public static ModuleConfigurationBuilder with(){
@@ -81,7 +85,8 @@ public class ModuleConfiguration {
     private ModuleConfiguration(ModuleConfigurationBuilder builder){
         this(builder.root, builder.storageType, builder.port, builder.prefix, builder.storageAddress, builder.editorConfig,
                 builder.redisHost, builder.redisPort, builder.expirablePrefix, builder.resourcesPrefix, builder.collectionsPrefix,
-                builder.deltaResourcesPrefix, builder.deltaEtagsPrefix, builder.resourceCleanupAmount, builder.lockPrefix);
+                builder.deltaResourcesPrefix, builder.deltaEtagsPrefix, builder.resourceCleanupAmount, builder.lockPrefix,
+                builder.confirmCollectionDelete);
     }
 
     public JsonObject asJsonObject(){
@@ -101,6 +106,7 @@ public class ModuleConfiguration {
         obj.put(PROP_DELTA_ETAGS_PREFIX, getDeltaEtagsPrefix());
         obj.put(PROP_RES_CLEANUP_AMMOUNT, getResourceCleanupAmount());
         obj.put(PROP_LOCK_PREFIX, getLockPrefix());
+        obj.put(PROP_CONFIRM_COLLECTIONDELETE, isConfirmCollectionDelete());
         return obj;
     }
 
@@ -150,6 +156,9 @@ public class ModuleConfiguration {
         }
         if(json.containsKey(PROP_LOCK_PREFIX)) {
             builder.lockPrefix(json.getString(PROP_LOCK_PREFIX));
+        }
+        if(json.containsKey(PROP_CONFIRM_COLLECTIONDELETE)){
+            builder.confirmCollectionDelete(json.getBoolean(PROP_CONFIRM_COLLECTIONDELETE));
         }
         return builder.build();
     }
@@ -210,9 +219,9 @@ public class ModuleConfiguration {
         return resourceCleanupAmount;
     }
 
-    public String getLockPrefix() {
-        return lockPrefix;
-    }
+    public String getLockPrefix() { return lockPrefix; }
+
+    public boolean isConfirmCollectionDelete() { return confirmCollectionDelete; }
 
     @Override
     public String toString() {
@@ -247,6 +256,7 @@ public class ModuleConfiguration {
         private String deltaEtagsPrefix;
         private long resourceCleanupAmount;
         private String lockPrefix;
+        private boolean confirmCollectionDelete;
 
         public ModuleConfigurationBuilder(){
             this.root = ".";
@@ -264,6 +274,7 @@ public class ModuleConfiguration {
             this.deltaEtagsPrefix = "delta:etags";
             this.resourceCleanupAmount = 100000L;
             this.lockPrefix = "rest-storage:locks";
+            this.confirmCollectionDelete = false;
         }
 
         public ModuleConfigurationBuilder root(String root){
@@ -350,6 +361,11 @@ public class ModuleConfiguration {
 
         public ModuleConfigurationBuilder lockPrefix(String lockPrefix) {
             this.lockPrefix = lockPrefix;
+            return this;
+        }
+
+        public ModuleConfigurationBuilder confirmCollectionDelete(boolean confirmCollectionDelete){
+            this.confirmCollectionDelete = confirmCollectionDelete;
             return this;
         }
 

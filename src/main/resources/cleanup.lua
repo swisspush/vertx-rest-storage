@@ -5,9 +5,11 @@ local deltaEtagsPrefix = ARGV[4]
 local expirableSet = ARGV[5]
 local minscore = tonumber(ARGV[6])
 local maxscore = tonumber(ARGV[7])
-local now = tonumber(ARGV[8])
-local bulksize = tonumber(ARGV[9])
-local delScriptSha = ARGV[10]
+local confirmCollectionDelete = ARGV[8]
+local deleteRecursive = ARGV[9]
+local now = tonumber(ARGV[10])
+local bulksize = tonumber(ARGV[11])
+local delScriptSha = ARGV[12]
 
 local resourcePrefixLength = string.len(resourcesPrefix)
 local counter = 0

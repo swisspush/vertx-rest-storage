@@ -5,10 +5,13 @@ import io.vertx.core.Vertx;
 import io.vertx.core.file.FileProps;
 import io.vertx.core.file.FileSystem;
 import io.vertx.core.file.OpenOptions;
+import io.vertx.core.logging.Logger;
+import io.vertx.core.logging.LoggerFactory;
 import org.swisspush.reststorage.util.LockMode;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.DirectoryNotEmptyException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -18,6 +21,8 @@ public class FileSystemStorage implements Storage {
 
     private String root;
     private Vertx vertx;
+
+    private Logger log = LoggerFactory.getLogger(FileSystemStorage.class);
 
     public FileSystemStorage(Vertx vertx, String root) {
         this.vertx = vertx;
@@ -132,7 +137,8 @@ public class FileSystemStorage implements Storage {
 
     @Override
     public void put(String path, String etag, boolean merge, long expire, String lockOwner, LockMode lockMode, long lockExpire, boolean storeCompressed, Handler<Resource> handler) {
-        throw new UnsupportedOperationException("Method 'put' with compressing resource is not yet implemented for the FileSystemStorage");
+        log.warn("PUT with storeCompressed option is not yet implemented in file system storage. Ignoring storeCompressed option value");
+        put(path, etag, merge, expire, "", LockMode.SILENT, 0, handler);
     }
 
     private void putFile(final Handler<Resource> handler, final String fullPath) {
@@ -152,19 +158,27 @@ public class FileSystemStorage implements Storage {
     }
 
     @Override
-    public void delete(String path, final Handler<Resource> handler) {
-        delete(path, "", LockMode.SILENT, 0, handler);
-    }
-
-    @Override
-    public void delete(String path, String lockOwner, LockMode lockMode, long lockExpire, final Handler<Resource> handler ) {
+    public void delete(String path, String lockOwner, LockMode lockMode, long lockExpire, boolean confirmCollectionDelete,
+                       boolean deleteRecursive, final Handler<Resource> handler ) {
         final String fullPath = canonicalize(path);
+
+        boolean deleteRecursiveInFileSystem = true;
+        if(confirmCollectionDelete && !deleteRecursive){
+            deleteRecursiveInFileSystem = false;
+        }
+        boolean finalDeleteRecursiveInFileSystem = deleteRecursiveInFileSystem;
+
         fileSystem().exists(fullPath, event -> {
             if (event.result()) {
-                fileSystem().deleteRecursive(fullPath, true, event1 -> {
+                fileSystem().deleteRecursive(fullPath, finalDeleteRecursiveInFileSystem, event1 -> {
                     Resource resource = new Resource();
                     if (event1.failed()) {
-                        resource.exists = false;
+                        if(event1.cause().getCause() != null && event1.cause().getCause() instanceof DirectoryNotEmptyException){
+                            resource.error = true;
+                            resource.errorMessage = "directory not empty. Use recursive=true parameter to delete";
+                        } else {
+                            resource.exists = false;
+                        }
                     }
                     handler.handle(resource);
                 });

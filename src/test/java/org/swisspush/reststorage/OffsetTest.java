@@ -13,7 +13,7 @@ import static org.hamcrest.core.IsCollectionContaining.hasItems;
 import static org.hamcrest.core.IsNot.not;
 
 @RunWith(VertxUnitRunner.class)
-public class OffsetTest extends AbstractTestCase {
+public class OffsetTest extends RedisStorageTestCase {
 
     @Test
     public void testInvalidOffsets(TestContext context) {

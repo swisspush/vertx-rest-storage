@@ -2,6 +2,10 @@
 
 [![Build Status](https://travis-ci.org/swisspush/vertx-rest-storage.svg?branch=master)](https://travis-ci.org/swisspush/vertx-rest-storage)
 [![codecov](https://codecov.io/gh/swisspush/vertx-rest-storage/branch/master/graph/badge.svg)](https://codecov.io/gh/swisspush/vertx-rest-storage)
+[![](https://img.shields.io/github/issues-raw/swisspush/rest-storage.svg)](https://github.com/swisspush/vertx-rest-storage/issues?utf8=%E2%9C%93&q=is%3Aissue%20is%3Aopen%20)
+[![GitHub contributors](https://img.shields.io/github/contributors/swisspush/rest-storage.svg)](https://github.com/swisspush/vertx-rest-storage/graphs/contributors)
+
+[![GitHub release](https://img.shields.io/github/release/swisspush/rest-storage.svg)](https://github.com/swisspush/vertx-rest-storage/releases/latest)
 [![Maven Central](https://img.shields.io/maven-central/v/org.swisspush/rest-storage.svg)]()
 
 Persistence for REST resources in the filesystem or a redis database. 
@@ -24,9 +28,15 @@ Runs either as a module or can be integrated into an existing application by ins
 
 ## Run it
 1. clone the repository.
-1. run `gradle build -x test`
-1. run the fatjar with `java -jar build/libs/rest-storage-x.x.x-all.jar
-1. you get a rest-storage, that stores to the filesystem in the directory where you started it. If you want to use the rest-storage with redis, you have to pass the configuration over a json file with `-conf conf.json`
+2. Install and start Redis
+  * Debian/Ubuntu: `apt-get install redis-server`
+  * Fedora/RedHat/CentOS: `yum install redis`
+  * OS X: `brew install redis`
+  * [Windows](https://github.com/MSOpenTech/redis/releases/download/win-2.8.2400/Redis-x64-2.8.2400.zip)
+  * [Other](http://redis.io/download)
+3. run `gradle build -x test`
+4. run the fatjar with `java -jar build/libs/rest-storage-x.x.x-all.jar
+5. you get a rest-storage, that stores to the filesystem in the directory where you started it. If you want to use the rest-storage with redis, you have to pass the configuration over a json file with `-conf conf.json`
 
 ## Features
 ### GET
@@ -70,6 +80,19 @@ The returned json response look like this:
   ]
 }
 ```
+
+### DELETE
+Invoking DELETE request on a leave (document) deletes the resource.
+> DELETE /storage/resources/resource_1
+
+Invoking DELETE request on a collection deletes the collection and all its childern.
+> DELETE /storage/resources/
+
+#### Parameters
+
+| Parameter | Description  |
+|:--------- | :----------- |
+| recursive | When configuration property _confirmCollectionDelete_ is set to _true_, the url parameter _recursive=true_ has to be added to delete collections. |
 
 ### StorageExpand
 
@@ -154,6 +177,7 @@ The following configuration values are available:
 | prefix | common | / | The part of the URL path before this handler (aka "context path" in JEE terminology) |
 | storageAddress | common | resource-storage | The eventbus address the mod listens to. |
 | editorConfig | common |  | Additional configuration values for the editor |
+| confirmCollectionDelete | common | false | When set to _true_, an additional _recursive=true_ url parameter has to be set to delete collections |
 | redisHost | redis | localhost | The host where redis is running on |
 | redisPort | redis | 6379 | The port where redis is running on |
 | expirablePrefix | redis | rest-storage:expirable | The prefix for expirable data redis keys |

@@ -34,6 +34,7 @@ public class ModuleConfigurationTest {
         testContext.assertEquals(config.getDeltaEtagsPrefix(), "delta:etags");
         testContext.assertEquals(config.getResourceCleanupAmount(), 100000L);
         testContext.assertEquals(config.getLockPrefix(), "rest-storage:locks");
+        testContext.assertFalse(config.isConfirmCollectionDelete());
     }
 
     @Test
@@ -42,6 +43,7 @@ public class ModuleConfigurationTest {
                 .redisHost("anotherhost")
                 .redisPort(1234)
                 .editorConfig(new JsonObject().put("myKey", "myValue"))
+                .confirmCollectionDelete(true)
                 .build();
 
         // default values
@@ -65,6 +67,7 @@ public class ModuleConfigurationTest {
         testContext.assertNotNull(config.getEditorConfig());
         testContext.assertTrue(config.getEditorConfig().containsKey("myKey"));
         testContext.assertEquals(config.getEditorConfig().getString("myKey"), "myValue");
+        testContext.assertTrue(config.isConfirmCollectionDelete());
     }
 
     @Test
@@ -87,6 +90,7 @@ public class ModuleConfigurationTest {
         testContext.assertEquals(json.getString(PROP_DELTA_ETAGS_PREFIX), "delta:etags");
         testContext.assertEquals(json.getLong(PROP_RES_CLEANUP_AMMOUNT), 100000L);
         testContext.assertEquals(json.getString(PROP_LOCK_PREFIX), "rest-storage:locks");
+        testContext.assertFalse(json.getBoolean(PROP_CONFIRM_COLLECTIONDELETE));
     }
 
     @Test
@@ -96,6 +100,7 @@ public class ModuleConfigurationTest {
                 .redisHost("anotherhost")
                 .redisPort(1234)
                 .editorConfig(new JsonObject().put("myKey", "myValue"))
+                .confirmCollectionDelete(true)
                 .build();
 
         JsonObject json = config.asJsonObject();
@@ -118,6 +123,7 @@ public class ModuleConfigurationTest {
         // overriden values
         testContext.assertEquals(json.getString(PROP_REDIS_HOST), "anotherhost");
         testContext.assertEquals(json.getInteger(PROP_REDIS_PORT), 1234);
+        testContext.assertTrue(json.getBoolean(PROP_CONFIRM_COLLECTIONDELETE));
 
         testContext.assertNotNull(json.getJsonObject(PROP_EDITOR_CONFIG));
         testContext.assertTrue(json.getJsonObject(PROP_EDITOR_CONFIG).containsKey("myKey"));
@@ -144,7 +150,7 @@ public class ModuleConfigurationTest {
         testContext.assertEquals(config.getDeltaEtagsPrefix(), "delta:etags");
         testContext.assertEquals(config.getResourceCleanupAmount(), 100000L);
         testContext.assertEquals(config.getLockPrefix(), "rest-storage:locks");
-
+        testContext.assertFalse(config.isConfirmCollectionDelete());
     }
 
     @Test
@@ -166,6 +172,7 @@ public class ModuleConfigurationTest {
         json.put(PROP_DELTA_ETAGS_PREFIX, "newDeltaEtagsPrefix");
         json.put(PROP_RES_CLEANUP_AMMOUNT, 999L);
         json.put(PROP_LOCK_PREFIX, "newLockPrefix");
+        json.put(PROP_CONFIRM_COLLECTIONDELETE, true);
 
         ModuleConfiguration config = fromJsonObject(json);
         testContext.assertEquals(config.getRoot(), "newroot");
@@ -187,5 +194,6 @@ public class ModuleConfigurationTest {
         testContext.assertEquals(config.getDeltaEtagsPrefix(), "newDeltaEtagsPrefix");
         testContext.assertEquals(config.getResourceCleanupAmount(), 999L);
         testContext.assertEquals(config.getLockPrefix(), "newLockPrefix");
+        testContext.assertTrue(config.isConfirmCollectionDelete());
     }
 }

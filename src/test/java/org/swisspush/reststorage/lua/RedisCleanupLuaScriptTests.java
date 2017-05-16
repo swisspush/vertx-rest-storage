@@ -175,6 +175,8 @@ public class RedisCleanupLuaScriptTests extends AbstractLuaScriptTest {
                         add(expirableSet);
                         add(String.valueOf(minscore));
                         add(String.valueOf(MAX_EXPIRE_IN_MILLIS));
+                        add("false");
+                        add("true");
                         add(String.valueOf(now));
                         add(String.valueOf(bulkSize));
 

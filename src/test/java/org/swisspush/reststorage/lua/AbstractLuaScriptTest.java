@@ -9,13 +9,10 @@
 package org.swisspush.reststorage.lua;
 
 import io.vertx.ext.unit.junit.VertxUnitRunner;
-import org.swisspush.reststorage.JedisFactory;
-import org.swisspush.reststorage.RedisEmbeddedConfiguration;
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
+import org.swisspush.reststorage.JedisFactory;
 import org.swisspush.reststorage.util.LockMode;
 import redis.clients.jedis.Jedis;
 
@@ -42,20 +39,6 @@ public abstract class AbstractLuaScriptTest {
 
     Jedis jedis = null;
 
-    @BeforeClass
-    public static void config() {
-        if (!useExternalRedis()) {
-            RedisEmbeddedConfiguration.redisServer.start();
-        }
-    }
-
-    @AfterClass
-    public static void stopRedis() {
-        if (!useExternalRedis()) {
-            RedisEmbeddedConfiguration.redisServer.stop();
-        }
-    }
-
     @Before
     public void connect() {
         jedis = JedisFactory.createJedis();
@@ -65,11 +48,6 @@ public abstract class AbstractLuaScriptTest {
     public void disconnect() {
         jedis.flushAll();
         jedis.close();
-    }
-
-    protected static boolean useExternalRedis() {
-        String externalRedis = System.getenv("EXTERNAL_REDIS");
-        return externalRedis != null;
     }
 
     protected double getNowAsDouble() {
