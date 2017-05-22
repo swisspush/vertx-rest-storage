@@ -82,6 +82,15 @@ public class EventBusAdapter {
         }
 
         @Override
+        public String rawMethod() { return method.toString(); }
+
+        @Override
+        public boolean isSSL() { return false; }
+
+        @Override
+        public String scheme() { throw new UnsupportedOperationException(); }
+
+        @Override
         public String uri() {
             return uri;
         }
@@ -101,6 +110,9 @@ public class EventBusAdapter {
             }
             return query;
         }
+
+        @Override
+        public String host() { throw new UnsupportedOperationException(); }
 
         @Override
         public HttpServerResponse response() {
@@ -324,6 +336,39 @@ public class EventBusAdapter {
                     }
 
                     @Override
+                    public int streamId() { throw new UnsupportedOperationException(); }
+
+                    @Override
+                    public HttpServerResponse push(HttpMethod method, String host, String path, Handler<AsyncResult<HttpServerResponse>> handler) {
+                        throw new UnsupportedOperationException();
+                    }
+
+                    @Override
+                    public HttpServerResponse push(HttpMethod method, String path, MultiMap headers, Handler<AsyncResult<HttpServerResponse>> handler) {
+                        throw new UnsupportedOperationException();
+                    }
+
+                    @Override
+                    public HttpServerResponse push(HttpMethod method, String path, Handler<AsyncResult<HttpServerResponse>> handler) {
+                        throw new UnsupportedOperationException();
+                    }
+
+                    @Override
+                    public HttpServerResponse push(HttpMethod method, String host, String path, MultiMap headers, Handler<AsyncResult<HttpServerResponse>> handler) {
+                        throw new UnsupportedOperationException();
+                    }
+
+                    @Override
+                    public void reset(long code) {
+                        throw new UnsupportedOperationException();
+                    }
+
+                    @Override
+                    public HttpServerResponse writeCustomFrame(int type, int flags, Buffer payload) {
+                        throw new UnsupportedOperationException();
+                    }
+
+                    @Override
                     public HttpServerResponse setWriteQueueMaxSize(int i) {
                         throw new UnsupportedOperationException();
                     }
@@ -452,6 +497,16 @@ public class EventBusAdapter {
         @Override
         public boolean isEnded() {
             throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public HttpServerRequest customFrameHandler(Handler<HttpFrame> handler) {
+            return null;
+        }
+
+        @Override
+        public HttpConnection connection() {
+            return null;
         }
 
         @Override
