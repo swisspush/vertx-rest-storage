@@ -30,6 +30,11 @@ public class FileSystemStorage implements Storage {
     }
 
     @Override
+    public float getMemoryUsage() {
+        throw new UnsupportedOperationException("Method 'getMemoryUsage' is not yet implemented for the FileSystemStorage");
+    }
+
+    @Override
     public void get(String path, String etag, final int offset, final int count, final Handler<Resource> handler) {
         final String fullPath = canonicalize(path);
         fileSystem().exists(fullPath, booleanAsyncResult -> {

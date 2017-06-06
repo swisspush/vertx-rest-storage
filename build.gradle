@@ -92,6 +92,7 @@ dependencies {
     testCompile "org.springframework:spring-context:4.1.0.RELEASE"
     testCompile "org.springframework:spring-jdbc:4.1.0.RELEASE"
     testCompile "com.jayway.awaitility:awaitility:$awaitilityVersion"
+    testCompile "org.mockito:mockito-core:$mockitoVersion"
 
     testRuntime 'com.github.kstyrc:embedded-redis:0.6'
 }

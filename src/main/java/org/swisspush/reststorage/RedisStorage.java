@@ -336,6 +336,11 @@ public class RedisStorage implements Storage {
     }
 
     @Override
+    public float getMemoryUsage() {
+        return 0;
+    }
+
+    @Override
     public void get(String path, String etag, int offset, int limit, final Handler<Resource> handler) {
         final String key = encodePath(path);
         List<String> keys = Collections.singletonList(key);

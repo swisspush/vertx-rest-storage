@@ -7,6 +7,13 @@ import java.util.List;
 
 public interface Storage {
 
+    /**
+     * Gets the percentage of the actual memory usage. Possible values are in range 0.0 to 100.0
+     *
+     * @return the percentage of the actual memory usage
+     */
+    float getMemoryUsage();
+
     void get(String path, String etag, int offset, int count, Handler<Resource> handler);
 
     void storageExpand(String path, String etag, List<String> subResources, Handler<Resource> handler);
