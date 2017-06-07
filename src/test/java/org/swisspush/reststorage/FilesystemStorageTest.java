@@ -8,6 +8,11 @@ import org.junit.runner.RunWith;
 
 import static org.mockito.Mockito.mock;
 
+/**
+ * Tests for the {@link FileSystemStorage} class
+ *
+ * @author https://github.com/mcweba [Marc-Andre Weber]
+ */
 @RunWith(VertxUnitRunner.class)
 public class FilesystemStorageTest {
 

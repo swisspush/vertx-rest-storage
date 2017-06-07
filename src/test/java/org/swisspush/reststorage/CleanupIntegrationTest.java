@@ -17,7 +17,7 @@ import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.core.IsEqual.equalTo;
 
 @RunWith(VertxUnitRunner.class)
-public class CleanupTest extends RedisStorageTestCase {
+public class CleanupIntegrationTest extends RedisStorageIntegrationTestCase {
 
     @Test
     public void testNothingToCleanup(TestContext testContext) throws InterruptedException {

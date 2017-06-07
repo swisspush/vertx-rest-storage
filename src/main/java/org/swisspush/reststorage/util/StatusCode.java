@@ -3,7 +3,7 @@ package org.swisspush.reststorage.util;
 /**
  * Enum for HTTP status codes
  *
- * @author webermarca
+ * @author https://github.com/mcweba [Marc-Andre Weber]
  */
 public enum StatusCode {
     OK(200, "OK"),

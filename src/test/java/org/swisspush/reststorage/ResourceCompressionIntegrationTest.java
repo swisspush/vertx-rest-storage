@@ -15,7 +15,7 @@ import static org.swisspush.reststorage.util.HttpRequestHeader.COMPRESS_HEADER;
 import static org.swisspush.reststorage.util.HttpRequestHeader.IF_NONE_MATCH_HEADER;
 
 @RunWith(VertxUnitRunner.class)
-public class ResourceCompressionTest extends RedisStorageTestCase {
+public class ResourceCompressionIntegrationTest extends RedisStorageIntegrationTestCase {
 
     @Test
     public void testPutGetWithCompression(TestContext context) {

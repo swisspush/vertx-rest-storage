@@ -1,12 +1,14 @@
 package org.swisspush.reststorage.util;
 
 import io.vertx.core.Vertx;
+import io.vertx.core.logging.Logger;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.apache.commons.io.IOUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Mockito;
 
 import java.io.*;
 import java.util.Arrays;
@@ -25,7 +27,7 @@ public class GZIPUtilTest {
         Async async = testContext.async();
         String uncompressedString = "My uncompresed Resource";
         byte[] uncompressed = uncompressedString.getBytes("UTF-8");
-        GZIPUtil.compressResource(Vertx.vertx(), uncompressed, compressResourceResult -> {
+        GZIPUtil.compressResource(Vertx.vertx(), Mockito.mock(Logger.class), uncompressed, compressResourceResult -> {
             testContext.assertTrue(compressResourceResult.succeeded());
             testContext.assertNotEquals(uncompressed, compressResourceResult.result(), "Compressed and uncompressed Resource should not be equal");
 
@@ -58,7 +60,7 @@ public class GZIPUtilTest {
     public void testDecompressResource(TestContext testContext) throws Exception {
         Async async = testContext.async();
         byte[] compressedData = IOUtils.toByteArray(this.getClass().getClassLoader().getResourceAsStream("testResource.gz"));
-        GZIPUtil.decompressResource(Vertx.vertx(), compressedData, decompressResourceResult -> {
+        GZIPUtil.decompressResource(Vertx.vertx(), Mockito.mock(Logger.class), compressedData, decompressResourceResult -> {
             try {
                 testContext.assertEquals("This is an uncompressed content from a gzip file", new String(decompressResourceResult.result(), "UTF-8"));
             } catch (UnsupportedEncodingException e) {

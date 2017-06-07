@@ -13,7 +13,7 @@ import org.swisspush.reststorage.util.ModuleConfiguration;
 import redis.clients.jedis.Jedis;
 
 @RunWith(VertxUnitRunner.class)
-public abstract class RedisStorageTestCase extends ConfigurableTestCase {
+public abstract class RedisStorageIntegrationTestCase extends ConfigurableTestCase {
 
     Jedis jedis = null;
 
