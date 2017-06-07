@@ -1,5 +1,6 @@
 package org.swisspush.reststorage;
 
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
@@ -44,6 +45,8 @@ public class RedisStorage implements Storage {
     private RedisClient redisClient;
     private Map<LuaScript,LuaScriptState> luaScripts = new HashMap<>();
 
+    private Optional<Float> currentMemoryUsageOptional = Optional.empty();
+
     public RedisStorage(Vertx vertx, ModuleConfiguration config) {
         this.expirableSet = config.getExpirablePrefix();
         this.redisResourcesPrefix = config.getResourcesPrefix();
@@ -76,6 +79,59 @@ public class RedisStorage implements Storage {
         LuaScriptState luaCleanupScriptState = new LuaScriptState(LuaScript.CLEANUP, false);
         luaCleanupScriptState.loadLuaScript(new RedisCommandDoNothing(), 0);
         luaScripts.put(LuaScript.CLEANUP, luaCleanupScriptState);
+
+        if(config.isRejectStorageWriteOnLowMemory()){
+            vertx.setPeriodic(config.getFreeMemoryCheckIntervalMs(), updateMemoryUsage ->{
+                calculateCurrentMemoryUsage().setHandler(optionalAsyncResult -> {
+                    currentMemoryUsageOptional = optionalAsyncResult.result();
+                });
+            });
+        }
+    }
+
+    public Future<Optional<Float>> calculateCurrentMemoryUsage(){
+        Future<Optional<Float>> future = Future.future();
+        redisClient.infoSection("memory", memoryInfo -> {
+            if (memoryInfo.failed()) {
+                log.error("Unable to get memory information from redis", memoryInfo.cause());
+                future.complete(Optional.empty());
+                return;
+            }
+
+            JsonObject memory = memoryInfo.result().getJsonObject("memory");
+            if (memory == null) {
+                log.warn("No 'memory' section received from redis. Unable to calculate the current memory usage");
+                future.complete(Optional.empty());
+                return;
+            }
+
+            Long totalSystemMemory;
+            try {
+                totalSystemMemory = Long.parseLong(memory.getString("total_system_memory"));
+                if (totalSystemMemory == 0) {
+                    log.warn("'total_system_memory' value 0 received from redis. Unable to calculate the current memory usage");
+                    future.complete(Optional.empty());
+                    return;
+                }
+            } catch (NumberFormatException ex) {
+                log.warn("No or invalid 'total_system_memory' value received from redis. Unable to calculate the current memory usage", ex);
+                future.complete(Optional.empty());
+                return;
+            }
+
+            Long usedMemory;
+            try {
+                usedMemory = Long.parseLong(memory.getString("used_memory"));
+            } catch (NumberFormatException ex) {
+                log.warn("No or invalid 'used_memory' value received from redis. Unable to calculate the current memory usage", ex);
+                future.complete(Optional.empty());
+                return;
+            }
+
+            float currentMemoryUsagePercentage = ((float) usedMemory / totalSystemMemory) * 100;
+            future.complete(Optional.of(currentMemoryUsagePercentage));
+        });
+        return future;
     }
 
     private enum LuaScript {
@@ -336,8 +392,8 @@ public class RedisStorage implements Storage {
     }
 
     @Override
-    public float getMemoryUsage() {
-        return 0;
+    public Optional<Float> getCurrentMemoryUsage() {
+        return currentMemoryUsageOptional;
     }
 
     @Override

@@ -12,10 +12,7 @@ import org.swisspush.reststorage.util.LockMode;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.DirectoryNotEmptyException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 public class FileSystemStorage implements Storage {
 
@@ -30,8 +27,8 @@ public class FileSystemStorage implements Storage {
     }
 
     @Override
-    public float getMemoryUsage() {
-        throw new UnsupportedOperationException("Method 'getMemoryUsage' is not yet implemented for the FileSystemStorage");
+    public Optional<Float> getCurrentMemoryUsage() {
+        throw new UnsupportedOperationException("Method 'getCurrentMemoryUsage' is not yet implemented for the FileSystemStorage");
     }
 
     @Override

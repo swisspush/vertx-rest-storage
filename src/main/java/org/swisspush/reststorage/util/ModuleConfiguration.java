@@ -26,7 +26,7 @@ public class ModuleConfiguration {
     private String lockPrefix;
     private boolean confirmCollectionDelete;
     private boolean rejectStorageWriteOnLowMemory;
-    private int freeMemoryCheckIntervalMs;
+    private long freeMemoryCheckIntervalMs;
 
     public static final String PROP_ROOT = "root";
     public static final String PROP_STORAGE_TYPE = "storageType";
@@ -63,7 +63,7 @@ public class ModuleConfiguration {
                                JsonObject editorConfig, String redisHost, int redisPort, String expirablePrefix,
                                String resourcesPrefix, String collectionsPrefix, String deltaResourcesPrefix,
                                String deltaEtagsPrefix, long resourceCleanupAmount, String lockPrefix,
-                               boolean confirmCollectionDelete, boolean rejectStorageWriteOnLowMemory, int freeMemoryCheckIntervalMs) {
+                               boolean confirmCollectionDelete, boolean rejectStorageWriteOnLowMemory, long freeMemoryCheckIntervalMs) {
         this.root = root;
         this.storageType = storageType;
         this.port = port;
@@ -172,7 +172,7 @@ public class ModuleConfiguration {
             builder.rejectStorageWriteOnLowMemory(json.getBoolean(PROP_REJECT_ON_LOW_MEMORY_ENABLED));
         }
         if(json.containsKey(PROP_FREE_MEMORY_CHECK_INTERVAL)){
-            builder.freeMemoryCheckIntervalMs(json.getInteger(PROP_FREE_MEMORY_CHECK_INTERVAL));
+            builder.freeMemoryCheckIntervalMs(json.getLong(PROP_FREE_MEMORY_CHECK_INTERVAL));
         }
         return builder.build();
     }
@@ -239,7 +239,7 @@ public class ModuleConfiguration {
 
     public boolean isRejectStorageWriteOnLowMemory() { return rejectStorageWriteOnLowMemory; }
 
-    public int getFreeMemoryCheckIntervalMs() { return freeMemoryCheckIntervalMs; }
+    public long getFreeMemoryCheckIntervalMs() { return freeMemoryCheckIntervalMs; }
 
     @Override
     public String toString() {
@@ -276,9 +276,9 @@ public class ModuleConfiguration {
         private String lockPrefix;
         private boolean confirmCollectionDelete;
         private boolean rejectStorageWriteOnLowMemory;
-        private int freeMemoryCheckIntervalMs;
+        private long freeMemoryCheckIntervalMs;
 
-        private static final int DEFAULT_FREE_MEMORY_CHECK_INTERVAL = 60000; // 60s
+        private static final long DEFAULT_FREE_MEMORY_CHECK_INTERVAL = 60000; // 60s
 
         public ModuleConfigurationBuilder(){
             this.root = ".";
@@ -398,7 +398,7 @@ public class ModuleConfiguration {
             return this;
         }
 
-        public ModuleConfigurationBuilder freeMemoryCheckIntervalMs(int freeMemoryCheckIntervalMs) {
+        public ModuleConfigurationBuilder freeMemoryCheckIntervalMs(long freeMemoryCheckIntervalMs) {
             this.freeMemoryCheckIntervalMs = freeMemoryCheckIntervalMs;
             return this;
         }

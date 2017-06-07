@@ -14,6 +14,6 @@ public class FilesystemStorageTest {
     @Test(expected=UnsupportedOperationException.class)
     public void testGetMemoryUsageNotYetImplemented(TestContext testContext){
         FileSystemStorage storage = new FileSystemStorage(mock(Vertx.class), "/root");
-        storage.getMemoryUsage();
+        storage.getCurrentMemoryUsage();
     }
 }

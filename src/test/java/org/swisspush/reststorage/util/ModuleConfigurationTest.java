@@ -36,7 +36,7 @@ public class ModuleConfigurationTest {
         testContext.assertEquals(config.getLockPrefix(), "rest-storage:locks");
         testContext.assertFalse(config.isConfirmCollectionDelete());
         testContext.assertFalse(config.isRejectStorageWriteOnLowMemory());
-        testContext.assertEquals(config.getFreeMemoryCheckIntervalMs(), 60000);
+        testContext.assertEquals(config.getFreeMemoryCheckIntervalMs(), 60000L);
     }
 
     @Test
@@ -73,7 +73,7 @@ public class ModuleConfigurationTest {
         testContext.assertEquals(config.getEditorConfig().getString("myKey"), "myValue");
         testContext.assertTrue(config.isConfirmCollectionDelete());
         testContext.assertTrue(config.isRejectStorageWriteOnLowMemory());
-        testContext.assertEquals(config.getFreeMemoryCheckIntervalMs(), 10000);
+        testContext.assertEquals(config.getFreeMemoryCheckIntervalMs(), 10000L);
     }
 
     @Test
@@ -98,7 +98,7 @@ public class ModuleConfigurationTest {
         testContext.assertEquals(json.getString(PROP_LOCK_PREFIX), "rest-storage:locks");
         testContext.assertFalse(json.getBoolean(PROP_CONFIRM_COLLECTIONDELETE));
         testContext.assertFalse(json.getBoolean(PROP_REJECT_ON_LOW_MEMORY_ENABLED));
-        testContext.assertEquals(json.getInteger(PROP_FREE_MEMORY_CHECK_INTERVAL), 60000);
+        testContext.assertEquals(json.getLong(PROP_FREE_MEMORY_CHECK_INTERVAL), 60000L);
     }
 
     @Test
@@ -135,7 +135,7 @@ public class ModuleConfigurationTest {
         testContext.assertEquals(json.getInteger(PROP_REDIS_PORT), 1234);
         testContext.assertTrue(json.getBoolean(PROP_CONFIRM_COLLECTIONDELETE));
         testContext.assertTrue(json.getBoolean(PROP_REJECT_ON_LOW_MEMORY_ENABLED));
-        testContext.assertEquals(config.getFreeMemoryCheckIntervalMs(), 5000);
+        testContext.assertEquals(config.getFreeMemoryCheckIntervalMs(), 5000L);
 
         testContext.assertNotNull(json.getJsonObject(PROP_EDITOR_CONFIG));
         testContext.assertTrue(json.getJsonObject(PROP_EDITOR_CONFIG).containsKey("myKey"));
@@ -164,7 +164,7 @@ public class ModuleConfigurationTest {
         testContext.assertEquals(config.getLockPrefix(), "rest-storage:locks");
         testContext.assertFalse(config.isConfirmCollectionDelete());
         testContext.assertFalse(config.isRejectStorageWriteOnLowMemory());
-        testContext.assertEquals(config.getFreeMemoryCheckIntervalMs(), 60000);
+        testContext.assertEquals(config.getFreeMemoryCheckIntervalMs(), 60000L);
     }
 
     @Test
@@ -212,6 +212,6 @@ public class ModuleConfigurationTest {
         testContext.assertEquals(config.getLockPrefix(), "newLockPrefix");
         testContext.assertTrue(config.isConfirmCollectionDelete());
         testContext.assertTrue(config.isRejectStorageWriteOnLowMemory());
-        testContext.assertEquals(config.getFreeMemoryCheckIntervalMs(), 30000);
+        testContext.assertEquals(config.getFreeMemoryCheckIntervalMs(), 30000L);
     }
 }
