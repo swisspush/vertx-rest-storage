@@ -15,10 +15,8 @@ import org.swisspush.reststorage.util.LockMode;
 import org.swisspush.reststorage.util.ResourceNameUtil;
 import org.swisspush.reststorage.util.StatusCode;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.text.DecimalFormat;
+import java.util.*;
 import java.util.Map.Entry;
 
 import static org.swisspush.reststorage.util.HttpRequestHeader.*;
@@ -38,14 +36,21 @@ public class RestStorageHandler implements Handler<HttpServerRequest> {
     private String prefixFixed;
     private String prefix;
     private boolean confirmCollectionDelete;
+    private boolean rejectStorageWriteOnLowMemory;
+    private DecimalFormat decimalFormat;
 
     public RestStorageHandler(Vertx vertx, final Logger log, final Storage storage, final String prefix,
-                              JsonObject editorConfig, final String lockPrefix, final boolean confirmCollectionDelete) {
+                              JsonObject editorConfig, final String lockPrefix,
+                              final boolean confirmCollectionDelete, final boolean rejectStorageWriteOnLowMemory) {
         this.router = Router.router(vertx);
         this.log = log;
         this.storage = storage;
         this.prefix = prefix;
         this.confirmCollectionDelete = confirmCollectionDelete;
+        this.rejectStorageWriteOnLowMemory = rejectStorageWriteOnLowMemory;
+
+        this.decimalFormat = new DecimalFormat();
+        this.decimalFormat.setMaximumFractionDigits(1);
 
         prefixFixed = prefix.equals("/") ? "" : prefix;
 
@@ -298,6 +303,41 @@ public class RestStorageHandler implements Handler<HttpServerRequest> {
         final String path = cleanPath(ctx.request().path().substring(prefixFixed.length()));
 
         MultiMap headers = ctx.request().headers();
+
+        Integer importanceLevel = null;
+        if (containsHeader(headers, IMPORTANCE_LEVEL_HEADER)) {
+            importanceLevel = getInteger(headers, IMPORTANCE_LEVEL_HEADER);
+            if (importanceLevel == null) {
+                ctx.request().resume();
+                ctx.response().setStatusCode(StatusCode.BAD_REQUEST.getStatusCode());
+                ctx.response().setStatusMessage(StatusCode.BAD_REQUEST.getStatusMessage());
+                ctx.response().end("Invalid " + IMPORTANCE_LEVEL_HEADER.getName() + " header: " + headers.get(IMPORTANCE_LEVEL_HEADER.getName()));
+                log.error("Rejecting PUT request to " + ctx.request().uri() + " because " + IMPORTANCE_LEVEL_HEADER.getName() + " header, has an invalid value: " +  headers.get(IMPORTANCE_LEVEL_HEADER.getName()));
+                return;
+            }
+
+            if(rejectStorageWriteOnLowMemory){
+                Optional<Float> currentMemoryUsage = storage.getCurrentMemoryUsage();
+                if (currentMemoryUsage.isPresent()) {
+                    if(currentMemoryUsage.get() > importanceLevel){
+                        ctx.request().resume();
+                        ctx.response().setStatusCode(StatusCode.INSUFFICIENT_STORAGE.getStatusCode());
+                        ctx.response().setStatusMessage(StatusCode.INSUFFICIENT_STORAGE.getStatusMessage());
+                        ctx.response().end(ctx.response().getStatusMessage());
+                        log.info("Rejecting PUT request to " + ctx.request().uri() + " because current memory usage of "
+                                + decimalFormat.format(currentMemoryUsage.get()) + "% is higher than provided importance level of " + importanceLevel + "%");
+                        return;
+                    }
+                } else {
+                    log.warn("Rejecting storage writes on low memory feature disabled, because current memory usage not available");
+                }
+            } else {
+                log.warn("Received request with " + IMPORTANCE_LEVEL_HEADER.getName() + " header, but rejecting storage writes on low memory feature disabled");
+            }
+        } else if(rejectStorageWriteOnLowMemory){
+            log.info("Received PUT request to " + ctx.request().uri() + " without " + IMPORTANCE_LEVEL_HEADER.getName()
+                    + " header. Going to handle this request with highest importance");
+        }
 
         Long expire = -1L; // default infinit
         if (containsHeader(headers, EXPIRE_AFTER_HEADER)) {

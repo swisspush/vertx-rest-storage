@@ -22,6 +22,7 @@ import org.swisspush.reststorage.util.ModuleConfiguration;
 import org.swisspush.reststorage.util.ResourceNameUtil;
 
 import java.io.*;
+import java.text.DecimalFormat;
 import java.util.*;
 
 public class RedisStorage implements Storage {
@@ -45,6 +46,7 @@ public class RedisStorage implements Storage {
     private Vertx vertx;
     private RedisClient redisClient;
     private Map<LuaScript,LuaScriptState> luaScripts = new HashMap<>();
+    private DecimalFormat decimalFormat;
 
     private Optional<Float> currentMemoryUsageOptional = Optional.empty();
 
@@ -63,6 +65,9 @@ public class RedisStorage implements Storage {
 
         this.vertx = vertx;
         this.redisClient = redisClient;
+
+        this.decimalFormat = new DecimalFormat();
+        this.decimalFormat.setMaximumFractionDigits(1);
 
         // load all the lua scripts
         LuaScriptState luaGetScriptState = new LuaScriptState(LuaScript.GET, false);
@@ -86,12 +91,19 @@ public class RedisStorage implements Storage {
         luaScripts.put(LuaScript.CLEANUP, luaCleanupScriptState);
 
         if(config.isRejectStorageWriteOnLowMemory()){
-            vertx.setPeriodic(config.getFreeMemoryCheckIntervalMs(), updateMemoryUsage ->{
-                calculateCurrentMemoryUsage().setHandler(optionalAsyncResult -> {
-                    currentMemoryUsageOptional = optionalAsyncResult.result();
-                });
+            calculateCurrentMemoryUsage().setHandler(optionalAsyncResult -> {
+                currentMemoryUsageOptional = optionalAsyncResult.result();
             });
+            startPeriodicMemoryUsageUpdate(config.getFreeMemoryCheckIntervalMs());
         }
+    }
+
+    private void startPeriodicMemoryUsageUpdate(long intervalMs){
+        vertx.setPeriodic(intervalMs, updateMemoryUsage ->{
+            calculateCurrentMemoryUsage().setHandler(optionalAsyncResult -> {
+                currentMemoryUsageOptional = optionalAsyncResult.result();
+            });
+        });
     }
 
     public Future<Optional<Float>> calculateCurrentMemoryUsage(){
@@ -139,6 +151,7 @@ public class RedisStorage implements Storage {
             } else if(currentMemoryUsagePercentage < MIN_PERCENTAGE){
                 currentMemoryUsagePercentage = MIN_PERCENTAGE;
             }
+            log.info("Current memory usage is " + decimalFormat.format(currentMemoryUsagePercentage) + "%");
             future.complete(Optional.of(currentMemoryUsagePercentage));
         });
         return future;

@@ -49,6 +49,62 @@ public class HttpRequestHeaderTest {
     }
 
     @Test
+    public void testGetInteger(TestContext context){
+        headers.set(LOCK_EXPIRE_AFTER_HEADER.getName(), "99");
+        context.assertEquals(99, getInteger(headers, LOCK_EXPIRE_AFTER_HEADER));
+
+        headers.set(LOCK_EXPIRE_AFTER_HEADER.getName(), "444");
+        context.assertEquals(444, getInteger(headers, LOCK_EXPIRE_AFTER_HEADER));
+
+        headers.set(LOCK_EXPIRE_AFTER_HEADER.getName(), "0");
+        context.assertEquals(0, getInteger(headers, LOCK_EXPIRE_AFTER_HEADER));
+
+        headers.set(LOCK_EXPIRE_AFTER_HEADER.getName(), "9999999999999999999");
+        context.assertNull(getInteger(headers, LOCK_EXPIRE_AFTER_HEADER));
+
+        headers.set(LOCK_EXPIRE_AFTER_HEADER.getName(), "");
+        context.assertNull(getInteger(headers, LOCK_EXPIRE_AFTER_HEADER));
+
+        headers.set(LOCK_EXPIRE_AFTER_HEADER.getName(), "xyz");
+        context.assertNull(getInteger(headers, LOCK_EXPIRE_AFTER_HEADER));
+
+        headers.clear();
+        context.assertNull(getInteger(headers, LOCK_EXPIRE_AFTER_HEADER));
+
+        context.assertNull(getInteger(null, LOCK_EXPIRE_AFTER_HEADER));
+    }
+
+    @Test
+    public void testGetIntegerWithDefaultValue(TestContext context){
+
+        Integer defaultValue = 1;
+
+        headers.set(LOCK_EXPIRE_AFTER_HEADER.getName(), "99");
+        context.assertEquals(99, getInteger(headers, LOCK_EXPIRE_AFTER_HEADER, defaultValue));
+
+        headers.set(LOCK_EXPIRE_AFTER_HEADER.getName(), "444");
+        context.assertEquals(444, getInteger(headers, LOCK_EXPIRE_AFTER_HEADER, defaultValue));
+
+        headers.set(LOCK_EXPIRE_AFTER_HEADER.getName(), "0");
+        context.assertEquals(0, getInteger(headers, LOCK_EXPIRE_AFTER_HEADER, defaultValue));
+
+        headers.set(LOCK_EXPIRE_AFTER_HEADER.getName(), "9999999999999999999");
+        context.assertEquals(1, getInteger(headers, LOCK_EXPIRE_AFTER_HEADER, defaultValue));
+
+        headers.set(LOCK_EXPIRE_AFTER_HEADER.getName(), "");
+        context.assertEquals(1, getInteger(headers, LOCK_EXPIRE_AFTER_HEADER, defaultValue));
+
+        headers.set(LOCK_EXPIRE_AFTER_HEADER.getName(), "xyz");
+        context.assertEquals(1, getInteger(headers, LOCK_EXPIRE_AFTER_HEADER, defaultValue));
+
+        headers.clear();
+        context.assertEquals(1, getInteger(headers, LOCK_EXPIRE_AFTER_HEADER, defaultValue));
+
+        context.assertEquals(1, getInteger(null, LOCK_EXPIRE_AFTER_HEADER, defaultValue));
+    }
+
+
+    @Test
     public void testGetLong(TestContext context){
         headers.set(LOCK_EXPIRE_AFTER_HEADER.getName(), "99");
         context.assertEquals(99L, getLong(headers, LOCK_EXPIRE_AFTER_HEADER));

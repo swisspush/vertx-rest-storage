@@ -15,6 +15,7 @@ public enum HttpRequestHeader {
     LOCK_MODE_HEADER("x-lock-mode"),
     LOCK_EXPIRE_AFTER_HEADER("x-lock-expire-after"),
     EXPIRE_AFTER_HEADER("x-expire-after"),
+    IMPORTANCE_LEVEL_HEADER("x-importance-level"),
     COMPRESS_HEADER("x-stored-compressed"),
     CONTENT_TYPE("Content-Type"),
     CONTENT_LENGTH("Content-Length");
@@ -34,6 +35,52 @@ public enum HttpRequestHeader {
             return false;
         }
         return headers.contains(httpRequestHeader.getName());
+    }
+
+    /**
+     * Get the value of the provided {@link HttpRequestHeader} as Integer.
+     * <p>Returns <code>null</code> in the following cases:</p>
+     *
+     * <ul>
+     *     <li>headers are <code>null</code></li>
+     *     <li>headers does not contain httpRequestHeader</li>
+     *     <li>httpRequestHeader is no parsable Integer i.e. empty string, non-digit characters, numbers to bigger than Integer allows</li>
+     * </ul>
+     *
+     * @param headers the http request headers
+     * @param httpRequestHeader the http request header to get the value from
+     * @return a Integer representing the value of the httpRequestHeader or null
+     */
+    public static Integer getInteger(MultiMap headers, HttpRequestHeader httpRequestHeader) {
+        return getInteger(headers, httpRequestHeader, null);
+    }
+
+    /**
+     * Get the value of the provided {@link HttpRequestHeader} or a default value as Integer.
+     * <p>Returns the default value in the following cases:</p>
+     *
+     * <ul>
+     *     <li>headers are <code>null</code></li>
+     *     <li>headers does not contain httpRequestHeader</li>
+     *     <li>httpRequestHeader is no parsable Integer i.e. empty string, non-digit characters, numbers to bigger than Integer allows</li>
+     * </ul>
+     *
+     * @param headers the http request headers
+     * @param httpRequestHeader the http request header to get the value from
+     * @param defaultValue the default value to return when no value from httpRequestHeader is extractable
+     * @return a Integer representing the value of the httpRequestHeader or the default value
+     */
+    public static Integer getInteger(MultiMap headers, HttpRequestHeader httpRequestHeader, Integer defaultValue) {
+        String headerValue = null;
+        if(headers != null) {
+            headerValue = headers.get(httpRequestHeader.getName());
+        }
+
+        try {
+            return Integer.parseInt(headerValue);
+        } catch (Exception e) {
+            return defaultValue;
+        }
     }
 
     /**
