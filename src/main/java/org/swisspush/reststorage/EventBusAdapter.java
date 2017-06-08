@@ -23,12 +23,7 @@ import java.util.Map;
 public class EventBusAdapter {
 
     public void init(final Vertx vertx, String address, final Handler<HttpServerRequest> requestHandler) {
-        vertx.eventBus().consumer(address, new Handler<Message<Buffer>>() {
-            @Override
-            public void handle(Message<Buffer> message) {
-                requestHandler.handle(new MappedHttpServerRequest(vertx, message));
-            }
-        });
+        vertx.eventBus().consumer(address, (Handler<Message<Buffer>>) message -> requestHandler.handle(new MappedHttpServerRequest(vertx, message)));
     }
 
     private class MappedHttpServerRequest implements HttpServerRequest {

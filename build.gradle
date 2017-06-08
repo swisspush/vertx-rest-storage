@@ -76,6 +76,7 @@ dependencies {
     compile "io.vertx:vertx-core:$vertxVersion"
     compile "io.vertx:vertx-redis-client:$vertxVersion"
     compile "io.vertx:vertx-web:$vertxVersion"
+    compile "io.vertx:vertx-codegen:$vertxVersion"
     compile "commons-lang:commons-lang:$commonslangVersion"
     compile "commons-codec:commons-codec:$commonscodecVersion"
     compile "org.hamcrest:hamcrest-core:1.3"

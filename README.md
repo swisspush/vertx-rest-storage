@@ -134,6 +134,26 @@ to send the names of the subresources in the body of the request. Using the exam
     "subResources" : ["resource1", "resource2", "resource3"]
 }
 ```
+
+### Reject PUT requests on low memory (redis only)
+The redis storage provides a feature to reject PUT requests when the memory gets low. The information about the used memory is provided by the
+redis _INFO_ command.
+
+`Attention:` The stats received by the _INFO_ command depend on the redis version. The required stats are _used_memory_ and _total_system_memory_. Without these stats, the feature is disabled!
+
+#### Configuration
+To enable the feature, set the _rejectStorageWriteOnLowMemory_ property (ModuleConfiguration) to _true_. Additionally, the _freeMemoryCheckIntervalMs_ property can be
+changed to modify the interval for current memory usage calculation.
+
+#### Usage
+To define the _importance level_ of PUT requests, add the following header:
+> x-importance-level: 75
+
+The value defines the percentage of used memory which is not allowed to be exceeded to accept the PUT request. In the example above, the Request will only be acepted when
+the currently used memory is lower than 75%. When the currently used memory is higher than 75%, the request will be rejected with a status code _507 Insufficient Storage_.
+
+The higher the _x-importance-level_ value, the more important the request. When no _x-importance-level_ header is provided, the request is handled with the highest importance.
+
 ### Lock Mechanism
 The lock mechanism allows you to lock a resource for a specified time. This way only the owner of the lock is able to write or delete the given resource.
 To lock a resource, you have to add the following headers to your PUT / DELETE request.
@@ -187,6 +207,8 @@ The following configuration values are available:
 | deltaEtagsPrefix | redis | delta:etags | The prefix for delta etags redis keys |
 | lockPrefix | redis | rest-storage:locks | The prefix for lock redis keys |
 | resourceCleanupAmount | redis | 100000 | The maximum amount of resources to clean in a single cleanup run |
+| rejectStorageWriteOnLowMemory | redis | false | When set to _true_, PUT requests with the x-importance-level header can be rejected when memory gets low |
+| freeMemoryCheckIntervalMs | redis | 60000 | The interval in milliseconds to calculate the actual memory usage |
 
 ### Configuration util
 
@@ -222,7 +244,7 @@ The data is stored in a redis database.
 Caution: The redis storage implementation does not currently support streaming. Avoid transfering too big payloads since they will be entirely copied in memory.
 
 ## Dependencies
-This module uses Vert.x v3.2.0 (or later), so **Java 8** is required.
+This module uses Vert.x v3.3.3 (or later), so **Java 8** is required.
 
 ## Use gradle with alternative repositories
 As standard the default maven repositories are set.

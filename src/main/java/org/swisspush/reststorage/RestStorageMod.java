@@ -30,7 +30,7 @@ public class RestStorageMod extends AbstractVerticle {
         }
 
         Handler<HttpServerRequest> handler = new RestStorageHandler(vertx, log, storage, modConfig.getPrefix(),
-                modConfig.getEditorConfig(), modConfig.getLockPrefix(), modConfig.isConfirmCollectionDelete(), modConfig.isRejectStorageWriteOnLowMemory());
+                modConfig.getEditorConfig(), modConfig.isConfirmCollectionDelete(), modConfig.isRejectStorageWriteOnLowMemory());
 
         // in Vert.x 2x 100-continues was activated per default, in vert.x 3x it is off per default.
         HttpServerOptions options = new HttpServerOptions().setHandle100ContinueAutomatically(true);

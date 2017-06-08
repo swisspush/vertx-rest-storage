@@ -40,8 +40,7 @@ public class RestStorageHandler implements Handler<HttpServerRequest> {
     private DecimalFormat decimalFormat;
 
     public RestStorageHandler(Vertx vertx, final Logger log, final Storage storage, final String prefix,
-                              JsonObject editorConfig, final String lockPrefix,
-                              final boolean confirmCollectionDelete, final boolean rejectStorageWriteOnLowMemory) {
+                              JsonObject editorConfig, final boolean confirmCollectionDelete, final boolean rejectStorageWriteOnLowMemory) {
         this.router = Router.router(vertx);
         this.log = log;
         this.storage = storage;
@@ -304,7 +303,7 @@ public class RestStorageHandler implements Handler<HttpServerRequest> {
 
         MultiMap headers = ctx.request().headers();
 
-        Integer importanceLevel = null;
+        Integer importanceLevel;
         if (containsHeader(headers, IMPORTANCE_LEVEL_HEADER)) {
             importanceLevel = getInteger(headers, IMPORTANCE_LEVEL_HEADER);
             if (importanceLevel == null) {
@@ -312,18 +311,18 @@ public class RestStorageHandler implements Handler<HttpServerRequest> {
                 ctx.response().setStatusCode(StatusCode.BAD_REQUEST.getStatusCode());
                 ctx.response().setStatusMessage(StatusCode.BAD_REQUEST.getStatusMessage());
                 ctx.response().end("Invalid " + IMPORTANCE_LEVEL_HEADER.getName() + " header: " + headers.get(IMPORTANCE_LEVEL_HEADER.getName()));
-                log.error("Rejecting PUT request to " + ctx.request().uri() + " because " + IMPORTANCE_LEVEL_HEADER.getName() + " header, has an invalid value: " +  headers.get(IMPORTANCE_LEVEL_HEADER.getName()));
+                log.error("Rejecting PUT request to " + ctx.request().uri() + " because " + IMPORTANCE_LEVEL_HEADER.getName() + " header, has an invalid value: " + headers.get(IMPORTANCE_LEVEL_HEADER.getName()));
                 return;
             }
 
-            if(rejectStorageWriteOnLowMemory){
+            if (rejectStorageWriteOnLowMemory) {
                 Optional<Float> currentMemoryUsage = storage.getCurrentMemoryUsage();
                 if (currentMemoryUsage.isPresent()) {
-                    if(currentMemoryUsage.get() > importanceLevel){
+                    if (currentMemoryUsage.get() > importanceLevel) {
                         ctx.request().resume();
                         ctx.response().setStatusCode(StatusCode.INSUFFICIENT_STORAGE.getStatusCode());
                         ctx.response().setStatusMessage(StatusCode.INSUFFICIENT_STORAGE.getStatusMessage());
-                        ctx.response().end(ctx.response().getStatusMessage());
+                        ctx.response().end(StatusCode.INSUFFICIENT_STORAGE.getStatusMessage());
                         log.info("Rejecting PUT request to " + ctx.request().uri() + " because current memory usage of "
                                 + decimalFormat.format(currentMemoryUsage.get()) + "% is higher than provided importance level of " + importanceLevel + "%");
                         return;
@@ -332,9 +331,9 @@ public class RestStorageHandler implements Handler<HttpServerRequest> {
                     log.warn("Rejecting storage writes on low memory feature disabled, because current memory usage not available");
                 }
             } else {
-                log.warn("Received request with " + IMPORTANCE_LEVEL_HEADER.getName() + " header, but rejecting storage writes on low memory feature disabled");
+                log.warn("Received request with " + IMPORTANCE_LEVEL_HEADER.getName() + " header, but rejecting storage writes on low memory feature is disabled");
             }
-        } else if(rejectStorageWriteOnLowMemory){
+        } else if (rejectStorageWriteOnLowMemory) {
             log.info("Received PUT request to " + ctx.request().uri() + " without " + IMPORTANCE_LEVEL_HEADER.getName()
                     + " header. Going to handle this request with highest importance");
         }
