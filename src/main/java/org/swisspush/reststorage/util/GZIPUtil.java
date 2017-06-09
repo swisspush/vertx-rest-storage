@@ -4,8 +4,6 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
-import org.swisspush.reststorage.RedisStorage;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -20,19 +18,16 @@ import java.util.zip.GZIPOutputStream;
  */
 public class GZIPUtil {
 
-    private static Logger log = LoggerFactory.getLogger(RedisStorage.class);
-
     /**
      * Compress the uncompressed data with the gzip algorithm. When the compression is done, the resultHandler is called
      * with the compressed data as result.
      *
      * @param vertx vertx
-     * @param uncompressedData the data to compress
-     * @param uncompressedData the data to compress
+     * @param log the logger
      * @param uncompressedData the data to compress
      * @param resultHandler the resultHandler is called when the compression is done
      */
-    public static void compressResource(Vertx vertx, byte[] uncompressedData, Handler<AsyncResult<byte[]>> resultHandler) {
+    public static void compressResource(Vertx vertx, Logger log, byte[] uncompressedData, Handler<AsyncResult<byte[]>> resultHandler) {
         vertx.executeBlocking(future -> {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
@@ -53,10 +48,11 @@ public class GZIPUtil {
      * Decompress the compressed (gzip) data. When the decompression is done, the resultHandler is called
      * with the decompressed data as result.
      * @param vertx vertx
+     * @param log the logger
      * @param compressedData the data to decompress
      * @param resultHandler the resultHandler is called when the compression is done
      */
-    public static void decompressResource(Vertx vertx, byte[] compressedData, Handler<AsyncResult<byte[]>> resultHandler) {
+    public static void decompressResource(Vertx vertx, Logger log, byte[] compressedData, Handler<AsyncResult<byte[]>> resultHandler) {
         vertx.executeBlocking(future -> {
             byte[] buffer = new byte[1024];
             ByteArrayOutputStream baos = new ByteArrayOutputStream();

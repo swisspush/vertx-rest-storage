@@ -25,6 +25,8 @@ public class ModuleConfiguration {
     private long resourceCleanupAmount;
     private String lockPrefix;
     private boolean confirmCollectionDelete;
+    private boolean rejectStorageWriteOnLowMemory;
+    private long freeMemoryCheckIntervalMs;
 
     public static final String PROP_ROOT = "root";
     public static final String PROP_STORAGE_TYPE = "storageType";
@@ -42,6 +44,8 @@ public class ModuleConfiguration {
     public static final String PROP_RES_CLEANUP_AMMOUNT = "resourceCleanupAmount";
     public static final String PROP_LOCK_PREFIX = "lockPrefix";
     public static final String PROP_CONFIRM_COLLECTIONDELETE = "confirmCollectionDelete";
+    public static final String PROP_REJECT_ON_LOW_MEMORY_ENABLED = "rejectStorageWriteOnLowMemory";
+    public static final String PROP_FREE_MEMORY_CHECK_INTERVAL = "freeMemoryCheckIntervalMs";
 
     public enum StorageType {
         filesystem, redis
@@ -59,7 +63,7 @@ public class ModuleConfiguration {
                                JsonObject editorConfig, String redisHost, int redisPort, String expirablePrefix,
                                String resourcesPrefix, String collectionsPrefix, String deltaResourcesPrefix,
                                String deltaEtagsPrefix, long resourceCleanupAmount, String lockPrefix,
-                               boolean confirmCollectionDelete) {
+                               boolean confirmCollectionDelete, boolean rejectStorageWriteOnLowMemory, long freeMemoryCheckIntervalMs) {
         this.root = root;
         this.storageType = storageType;
         this.port = port;
@@ -76,6 +80,8 @@ public class ModuleConfiguration {
         this.resourceCleanupAmount = resourceCleanupAmount;
         this.lockPrefix = lockPrefix;
         this.confirmCollectionDelete = confirmCollectionDelete;
+        this.rejectStorageWriteOnLowMemory = rejectStorageWriteOnLowMemory;
+        this.freeMemoryCheckIntervalMs = freeMemoryCheckIntervalMs;
     }
 
     public static ModuleConfigurationBuilder with(){
@@ -86,7 +92,7 @@ public class ModuleConfiguration {
         this(builder.root, builder.storageType, builder.port, builder.prefix, builder.storageAddress, builder.editorConfig,
                 builder.redisHost, builder.redisPort, builder.expirablePrefix, builder.resourcesPrefix, builder.collectionsPrefix,
                 builder.deltaResourcesPrefix, builder.deltaEtagsPrefix, builder.resourceCleanupAmount, builder.lockPrefix,
-                builder.confirmCollectionDelete);
+                builder.confirmCollectionDelete, builder.rejectStorageWriteOnLowMemory, builder.freeMemoryCheckIntervalMs);
     }
 
     public JsonObject asJsonObject(){
@@ -107,6 +113,8 @@ public class ModuleConfiguration {
         obj.put(PROP_RES_CLEANUP_AMMOUNT, getResourceCleanupAmount());
         obj.put(PROP_LOCK_PREFIX, getLockPrefix());
         obj.put(PROP_CONFIRM_COLLECTIONDELETE, isConfirmCollectionDelete());
+        obj.put(PROP_REJECT_ON_LOW_MEMORY_ENABLED, isRejectStorageWriteOnLowMemory());
+        obj.put(PROP_FREE_MEMORY_CHECK_INTERVAL, getFreeMemoryCheckIntervalMs());
         return obj;
     }
 
@@ -159,6 +167,12 @@ public class ModuleConfiguration {
         }
         if(json.containsKey(PROP_CONFIRM_COLLECTIONDELETE)){
             builder.confirmCollectionDelete(json.getBoolean(PROP_CONFIRM_COLLECTIONDELETE));
+        }
+        if(json.containsKey(PROP_REJECT_ON_LOW_MEMORY_ENABLED)){
+            builder.rejectStorageWriteOnLowMemory(json.getBoolean(PROP_REJECT_ON_LOW_MEMORY_ENABLED));
+        }
+        if(json.containsKey(PROP_FREE_MEMORY_CHECK_INTERVAL)){
+            builder.freeMemoryCheckIntervalMs(json.getLong(PROP_FREE_MEMORY_CHECK_INTERVAL));
         }
         return builder.build();
     }
@@ -223,6 +237,10 @@ public class ModuleConfiguration {
 
     public boolean isConfirmCollectionDelete() { return confirmCollectionDelete; }
 
+    public boolean isRejectStorageWriteOnLowMemory() { return rejectStorageWriteOnLowMemory; }
+
+    public long getFreeMemoryCheckIntervalMs() { return freeMemoryCheckIntervalMs; }
+
     @Override
     public String toString() {
         return asJsonObject().toString();
@@ -257,6 +275,10 @@ public class ModuleConfiguration {
         private long resourceCleanupAmount;
         private String lockPrefix;
         private boolean confirmCollectionDelete;
+        private boolean rejectStorageWriteOnLowMemory;
+        private long freeMemoryCheckIntervalMs;
+
+        private static final long DEFAULT_FREE_MEMORY_CHECK_INTERVAL = 60000; // 60s
 
         public ModuleConfigurationBuilder(){
             this.root = ".";
@@ -275,6 +297,8 @@ public class ModuleConfiguration {
             this.resourceCleanupAmount = 100000L;
             this.lockPrefix = "rest-storage:locks";
             this.confirmCollectionDelete = false;
+            this.rejectStorageWriteOnLowMemory = false;
+            this.freeMemoryCheckIntervalMs = DEFAULT_FREE_MEMORY_CHECK_INTERVAL;
         }
 
         public ModuleConfigurationBuilder root(String root){
@@ -366,6 +390,16 @@ public class ModuleConfiguration {
 
         public ModuleConfigurationBuilder confirmCollectionDelete(boolean confirmCollectionDelete){
             this.confirmCollectionDelete = confirmCollectionDelete;
+            return this;
+        }
+
+        public ModuleConfigurationBuilder rejectStorageWriteOnLowMemory(boolean rejectStorageWriteOnLowMemory){
+            this.rejectStorageWriteOnLowMemory = rejectStorageWriteOnLowMemory;
+            return this;
+        }
+
+        public ModuleConfigurationBuilder freeMemoryCheckIntervalMs(long freeMemoryCheckIntervalMs) {
+            this.freeMemoryCheckIntervalMs = freeMemoryCheckIntervalMs;
             return this;
         }
 

@@ -1,5 +1,6 @@
 package org.swisspush.reststorage;
 
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
@@ -21,6 +22,7 @@ import org.swisspush.reststorage.util.ModuleConfiguration;
 import org.swisspush.reststorage.util.ResourceNameUtil;
 
 import java.io.*;
+import java.text.DecimalFormat;
 import java.util.*;
 
 public class RedisStorage implements Storage {
@@ -30,7 +32,8 @@ public class RedisStorage implements Storage {
     // set to very high value = Sat Nov 20 2286 17:46:39
     private static final String MAX_EXPIRE_IN_MILLIS = "9999999999999";
     private final String EMPTY = "";
-
+    private static final float MAX_PERCENTAGE = 100.0f;
+    private static final float MIN_PERCENTAGE = 0.0f;
     private static final int CLEANUP_BULK_SIZE = 200;
 
     private String redisResourcesPrefix;
@@ -43,8 +46,15 @@ public class RedisStorage implements Storage {
     private Vertx vertx;
     private RedisClient redisClient;
     private Map<LuaScript,LuaScriptState> luaScripts = new HashMap<>();
+    private DecimalFormat decimalFormat;
+
+    private Optional<Float> currentMemoryUsageOptional = Optional.empty();
 
     public RedisStorage(Vertx vertx, ModuleConfiguration config) {
+        this(vertx, config, RedisClient.create(vertx, new RedisOptions().setHost(config.getRedisHost()).setPort(config.getRedisPort())));
+    }
+
+    public RedisStorage(Vertx vertx, ModuleConfiguration config, RedisClient redisClient) {
         this.expirableSet = config.getExpirablePrefix();
         this.redisResourcesPrefix = config.getResourcesPrefix();
         this.redisCollectionsPrefix = config.getCollectionsPrefix();
@@ -54,7 +64,10 @@ public class RedisStorage implements Storage {
         this.redisLockPrefix = config.getLockPrefix();
 
         this.vertx = vertx;
-        this.redisClient = RedisClient.create(vertx, new RedisOptions().setHost(config.getRedisHost()).setPort(config.getRedisPort()));
+        this.redisClient = redisClient;
+
+        this.decimalFormat = new DecimalFormat();
+        this.decimalFormat.setMaximumFractionDigits(1);
 
         // load all the lua scripts
         LuaScriptState luaGetScriptState = new LuaScriptState(LuaScript.GET, false);
@@ -76,6 +89,76 @@ public class RedisStorage implements Storage {
         LuaScriptState luaCleanupScriptState = new LuaScriptState(LuaScript.CLEANUP, false);
         luaCleanupScriptState.loadLuaScript(new RedisCommandDoNothing(), 0);
         luaScripts.put(LuaScript.CLEANUP, luaCleanupScriptState);
+
+        if(config.isRejectStorageWriteOnLowMemory()){
+            calculateCurrentMemoryUsage().setHandler(optionalAsyncResult -> {
+                currentMemoryUsageOptional = optionalAsyncResult.result();
+            });
+            startPeriodicMemoryUsageUpdate(config.getFreeMemoryCheckIntervalMs());
+        }
+    }
+
+    private void startPeriodicMemoryUsageUpdate(long intervalMs){
+        vertx.setPeriodic(intervalMs, updateMemoryUsage ->{
+            calculateCurrentMemoryUsage().setHandler(optionalAsyncResult -> {
+                currentMemoryUsageOptional = optionalAsyncResult.result();
+            });
+        });
+    }
+
+    public Future<Optional<Float>> calculateCurrentMemoryUsage(){
+        Future<Optional<Float>> future = Future.future();
+        redisClient.infoSection("memory", memoryInfo -> {
+            if (memoryInfo.failed()) {
+                log.error("Unable to get memory information from redis", memoryInfo.cause());
+                future.complete(Optional.empty());
+                return;
+            }
+
+            JsonObject memory = memoryInfo.result().getJsonObject("memory");
+            if (memory == null) {
+                log.warn("No 'memory' section received from redis. Unable to calculate the current memory usage");
+                future.complete(Optional.empty());
+                return;
+            }
+
+            Long totalSystemMemory;
+            try {
+                totalSystemMemory = Long.parseLong(memory.getString("total_system_memory"));
+                if (totalSystemMemory == 0) {
+                    log.warn("'total_system_memory' value 0 received from redis. Unable to calculate the current memory usage");
+                    future.complete(Optional.empty());
+                    return;
+                }
+            } catch (Exception ex) {
+                logPropertyWarning("total_system_memory", ex);
+                future.complete(Optional.empty());
+                return;
+            }
+
+            Long usedMemory;
+            try {
+                usedMemory = Long.parseLong(memory.getString("used_memory"));
+            } catch (Exception ex) {
+                logPropertyWarning("used_memory", ex);
+                future.complete(Optional.empty());
+                return;
+            }
+
+            float currentMemoryUsagePercentage = ((float) usedMemory / totalSystemMemory) * 100;
+            if(currentMemoryUsagePercentage > MAX_PERCENTAGE){
+                currentMemoryUsagePercentage = MAX_PERCENTAGE;
+            } else if(currentMemoryUsagePercentage < MIN_PERCENTAGE){
+                currentMemoryUsagePercentage = MIN_PERCENTAGE;
+            }
+            log.info("Current memory usage is " + decimalFormat.format(currentMemoryUsagePercentage) + "%");
+            future.complete(Optional.of(currentMemoryUsagePercentage));
+        });
+        return future;
+    }
+
+    private void logPropertyWarning(String property, Exception ex){
+        log.warn("No or invalid '"+property+"' value received from redis. Unable to calculate the current memory usage. Exception: " + ex.toString());
     }
 
     private enum LuaScript {
@@ -336,6 +419,11 @@ public class RedisStorage implements Storage {
     }
 
     @Override
+    public Optional<Float> getCurrentMemoryUsage() {
+        return currentMemoryUsageOptional;
+    }
+
+    @Override
     public void get(String path, String etag, int offset, int limit, final Handler<Resource> handler) {
         final String key = encodePath(path);
         List<String> keys = Collections.singletonList(key);
@@ -529,7 +617,7 @@ public class RedisStorage implements Storage {
             byte[] content = decodeBinary(valueStr);
             if(!values.hasNull(3)){
                 // data is compressed
-                GZIPUtil.decompressResource(vertx, content, decompressedResult -> {
+                GZIPUtil.decompressResource(vertx, log, content, decompressedResult -> {
                     if(decompressedResult.succeeded()) {
                         r.readStream = new ByteArrayReadStream(decompressedResult.result());
                         r.length = decompressedResult.result().length;
@@ -667,7 +755,7 @@ public class RedisStorage implements Storage {
 
             if (storeCompressed) {
                 String finalExpireInMillis = expireInMillis;
-                GZIPUtil.compressResource(vertx, stream.getBytes(), compressResourceResult -> {
+                GZIPUtil.compressResource(vertx, log, stream.getBytes(), compressResourceResult -> {
                     if(compressResourceResult.succeeded()) {
                         List<String> arg = Arrays.asList(
                                 redisResourcesPrefix,

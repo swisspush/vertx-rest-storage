@@ -76,6 +76,7 @@ dependencies {
     compile "io.vertx:vertx-core:$vertxVersion"
     compile "io.vertx:vertx-redis-client:$vertxVersion"
     compile "io.vertx:vertx-web:$vertxVersion"
+    compile "io.vertx:vertx-codegen:$vertxVersion"
     compile "commons-lang:commons-lang:$commonslangVersion"
     compile "commons-codec:commons-codec:$commonscodecVersion"
     compile "org.hamcrest:hamcrest-core:1.3"
@@ -92,6 +93,7 @@ dependencies {
     testCompile "org.springframework:spring-context:4.1.0.RELEASE"
     testCompile "org.springframework:spring-jdbc:4.1.0.RELEASE"
     testCompile "com.jayway.awaitility:awaitility:$awaitilityVersion"
+    testCompile "org.mockito:mockito-core:$mockitoVersion"
 
     testRuntime 'com.github.kstyrc:embedded-redis:0.6'
 }

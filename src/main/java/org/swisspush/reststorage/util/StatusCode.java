@@ -3,7 +3,7 @@ package org.swisspush.reststorage.util;
 /**
  * Enum for HTTP status codes
  *
- * @author webermarca
+ * @author https://github.com/mcweba [Marc-Andre Weber]
  */
 public enum StatusCode {
     OK(200, "OK"),
@@ -13,6 +13,7 @@ public enum StatusCode {
     NOT_FOUND(404, "Not Found"),
     METHOD_NOT_ALLOWED(405, "Method Not Allowed"),
     INTERNAL_SERVER_ERROR(500, "Internal Server Error"),
+    INSUFFICIENT_STORAGE(507, "Insufficient Storage"),
     CONFLICT(409, "Conflict");
 
     private final int statusCode;
