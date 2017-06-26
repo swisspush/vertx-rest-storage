@@ -117,7 +117,7 @@ public class RestStorageHandler implements Handler<HttpServerRequest> {
     }
 
     private void getResource(RoutingContext ctx) {
-        final String path = cleanPath(ctx.request().path().substring(prefixFixed.length()));
+        final String path = cleanPath(ctx);
         final String etag = ctx.request().headers().get(IF_NONE_MATCH_HEADER.getName());
         if (log.isTraceEnabled()) {
             log.trace("RestStorageHandler got GET Request path: " + path + " etag: " + etag);
@@ -299,7 +299,7 @@ public class RestStorageHandler implements Handler<HttpServerRequest> {
 
     private void putResource(RoutingContext ctx) {
         ctx.request().pause();
-        final String path = cleanPath(ctx.request().path().substring(prefixFixed.length()));
+        final String path = cleanPath(ctx);
 
         MultiMap headers = ctx.request().headers();
 
@@ -460,7 +460,7 @@ public class RestStorageHandler implements Handler<HttpServerRequest> {
     }
 
     private void deleteResource(RoutingContext ctx) {
-        final String path = cleanPath(ctx.request().path().substring(prefixFixed.length()));
+        final String path = cleanPath(ctx);
         if (log.isTraceEnabled()) {
             log.trace("RestStorageHandler delete resource: " + ctx.request().uri());
         }
@@ -550,7 +550,7 @@ public class RestStorageHandler implements Handler<HttpServerRequest> {
                         return;
                     }
 
-                    final String path = cleanPath(ctx.request().path().substring(prefixFixed.length()));
+                    final String path = cleanPath(ctx);
                     final String etag = ctx.request().headers().get(IF_NONE_MATCH_HEADER.getName());
                     storage.storageExpand(path, etag, subResourceNames, resource -> {
 
@@ -624,15 +624,22 @@ public class RestStorageHandler implements Handler<HttpServerRequest> {
     // End Router handling    //
     ////////////////////////////
 
-    private String cleanPath(String value) {
-        value = value.replaceAll("\\.\\.", "").replaceAll("\\/\\/", "/");
-        while (value.endsWith("/")) {
-            value = value.substring(0, value.length() - 1);
+    private String cleanPath(RoutingContext ctx) {
+        String path = ctx.request().path().substring(prefixFixed.length());
+        path = path.replaceAll("\\.\\.", "");
+
+        boolean keepDoubleSlashes = Boolean.parseBoolean(ctx.request().headers().get(KEEP_DOUBLE_SLASHES_HEADER.getName()));
+        if(!keepDoubleSlashes){
+            path = path.replaceAll("\\/\\/", "/");
         }
-        if (value.isEmpty()) {
+
+        while (path.endsWith("/")) {
+            path = path.substring(0, path.length() - 1);
+        }
+        if (path.isEmpty()) {
             return "/";
         }
-        return value;
+        return path;
     }
 
     public static class OffsetLimit {
