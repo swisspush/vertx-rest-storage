@@ -15,6 +15,7 @@ import static com.jayway.awaitility.Awaitility.await;
 import static com.jayway.restassured.RestAssured.*;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.hasItems;
+import static org.swisspush.reststorage.util.HttpRequestHeader.KEEP_DOUBLE_SLASHES_HEADER;
 
 @RunWith(VertxUnitRunner.class)
 public class CrudIntegrationTest extends RedisStorageIntegrationTestCase {
@@ -36,6 +37,66 @@ public class CrudIntegrationTest extends RedisStorageIntegrationTestCase {
         // get again with double slashes
         when().get("resources/myres").then().assertThat().statusCode(404);
         given().urlEncodingEnabled(false).when().get("resources//myres").then().assertThat().statusCode(404);
+
+        async.complete();
+    }
+
+    @Test
+    public void testDoubleSlashesHandlingExtended(TestContext context) {
+        Async async = context.async();
+
+        with().urlEncodingEnabled(false).body("{ \"foo\": \"bar\" }").put("resources/myres");
+        given().urlEncodingEnabled(false).when().get("resources/myres").then().assertThat().body("foo", equalTo("bar"));
+        given().delete("resources/myres").then().assertThat().statusCode(200);
+        jedis.flushAll();
+
+        with().header(KEEP_DOUBLE_SLASHES_HEADER.getName(), "true").urlEncodingEnabled(false)
+                .body("{ \"foo\": \"bar\" }").put("resources/myres");
+        given().urlEncodingEnabled(false).when().get("resources/myres").then().assertThat().body("foo", equalTo("bar"));
+        given().delete("resources/myres").then().assertThat().statusCode(200);
+        jedis.flushAll();
+
+
+        with().urlEncodingEnabled(false)
+                .body("{ \"foo\": \"bar\" }").put("resources/myres");
+        given().header(KEEP_DOUBLE_SLASHES_HEADER.getName(), "true").urlEncodingEnabled(false)
+                .when().get("resources/myres").then().assertThat().body("foo", equalTo("bar"));
+        given().delete("resources/myres").then().assertThat().statusCode(200);
+        jedis.flushAll();
+
+        with().urlEncodingEnabled(false).header(KEEP_DOUBLE_SLASHES_HEADER.getName(), "true")
+                .body("{ \"foo\": \"bar\" }").put("resources/myres");
+        given().header(KEEP_DOUBLE_SLASHES_HEADER.getName(), "true").urlEncodingEnabled(false)
+                .when().get("resources/myres").then().assertThat().body("foo", equalTo("bar"));
+        given().delete("resources/myres").then().assertThat().statusCode(200);
+        jedis.flushAll();
+
+        with().urlEncodingEnabled(false).body("{ \"foo\": \"bar\" }").put("resources//myres");
+        given().urlEncodingEnabled(false).when().get("resources//myres").then().assertThat().body("foo", equalTo("bar"));
+        given().urlEncodingEnabled(false).delete("resources//myres").then().assertThat().statusCode(200);
+        jedis.flushAll();
+
+
+        with().urlEncodingEnabled(false).header(KEEP_DOUBLE_SLASHES_HEADER.getName(), "true")
+                .body("{ \"foo\": \"bar\" }").put("resources//myres");
+        given().urlEncodingEnabled(false).when().get("resources//myres").then().assertThat().statusCode(404);
+        given().urlEncodingEnabled(false).delete("resources//myres").then().assertThat().statusCode(404);
+        jedis.flushAll();
+
+        with().urlEncodingEnabled(false)
+                .body("{ \"foo\": \"bar\" }").put("resources//myres");
+        given().urlEncodingEnabled(false).header(KEEP_DOUBLE_SLASHES_HEADER.getName(), "true")
+                .when().get("resources//myres").then().assertThat().statusCode(404);
+        given().urlEncodingEnabled(false).header(KEEP_DOUBLE_SLASHES_HEADER.getName(), "true")
+                .delete("resources//myres").then().assertThat().statusCode(404);
+        jedis.flushAll();
+
+        with().urlEncodingEnabled(false).header(KEEP_DOUBLE_SLASHES_HEADER.getName(), "true")
+                .body("{ \"foo\": \"bar\" }").put("resources//myres");
+        given().urlEncodingEnabled(false).header(KEEP_DOUBLE_SLASHES_HEADER.getName(), "true")
+                .when().get("resources//myres").then().assertThat().body("foo", equalTo("bar"));
+        given().urlEncodingEnabled(false).header(KEEP_DOUBLE_SLASHES_HEADER.getName(), "true")
+                .delete("resources//myres").then().assertThat().statusCode(200);
 
         async.complete();
     }

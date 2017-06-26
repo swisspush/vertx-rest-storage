@@ -84,6 +84,22 @@ public class RedisGetLuaScriptTests extends AbstractLuaScriptTest {
         assertThat(values3.get(2), not(equalTo(etag)));
     }
 
+    /**
+     * Double slashes in paths are replaced with double colons in the lua scripts
+     */
+    @Test
+    public void getResourceWithDoubleSlashesInPathPath() {
+
+        // ARRANGE
+        evalScriptPut(":project:server::test::test1:test2", "{\"content\": \"test/test1/test2\"}");
+
+        // ACT
+        List<String> value = (List<String>) evalScriptGet(":project:server::test::test1:test2");
+
+        // ASSERT
+        assertThat(TYPE_RESOURCE, equalTo(value.get(0)));
+        assertThat("{\"content\": \"test/test1/test2\"}", equalTo(value.get(1)));
+    }
 
     @Test
     public void getCollectionPathDepthIs3ChildIsResource() {
