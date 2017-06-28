@@ -8,6 +8,7 @@ import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.swisspush.reststorage.util.ModuleConfiguration.PathProcessingStrategy;
 
 import java.util.List;
 
@@ -15,7 +16,7 @@ import static com.jayway.awaitility.Awaitility.await;
 import static com.jayway.restassured.RestAssured.*;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.hasItems;
-import static org.swisspush.reststorage.util.HttpRequestHeader.KEEP_DOUBLE_SLASHES_HEADER;
+import static org.swisspush.reststorage.util.HttpRequestHeader.PATH_PROCESSING_STRATEGY_HEADER;
 
 @RunWith(VertxUnitRunner.class)
 public class CrudIntegrationTest extends RedisStorageIntegrationTestCase {
@@ -50,7 +51,7 @@ public class CrudIntegrationTest extends RedisStorageIntegrationTestCase {
         given().delete("resources/myres").then().assertThat().statusCode(200);
         jedis.flushAll();
 
-        with().header(KEEP_DOUBLE_SLASHES_HEADER.getName(), "true").urlEncodingEnabled(false)
+        with().header(PATH_PROCESSING_STRATEGY_HEADER.getName(), PathProcessingStrategy.unmodified.name()).urlEncodingEnabled(false)
                 .body("{ \"foo\": \"bar\" }").put("resources/myres");
         given().urlEncodingEnabled(false).when().get("resources/myres").then().assertThat().body("foo", equalTo("bar"));
         given().delete("resources/myres").then().assertThat().statusCode(200);
@@ -59,14 +60,14 @@ public class CrudIntegrationTest extends RedisStorageIntegrationTestCase {
 
         with().urlEncodingEnabled(false)
                 .body("{ \"foo\": \"bar\" }").put("resources/myres");
-        given().header(KEEP_DOUBLE_SLASHES_HEADER.getName(), "true").urlEncodingEnabled(false)
+        given().header(PATH_PROCESSING_STRATEGY_HEADER.getName(), PathProcessingStrategy.unmodified.name()).urlEncodingEnabled(false)
                 .when().get("resources/myres").then().assertThat().body("foo", equalTo("bar"));
         given().delete("resources/myres").then().assertThat().statusCode(200);
         jedis.flushAll();
 
-        with().urlEncodingEnabled(false).header(KEEP_DOUBLE_SLASHES_HEADER.getName(), "true")
+        with().urlEncodingEnabled(false).header(PATH_PROCESSING_STRATEGY_HEADER.getName(), PathProcessingStrategy.unmodified.name())
                 .body("{ \"foo\": \"bar\" }").put("resources/myres");
-        given().header(KEEP_DOUBLE_SLASHES_HEADER.getName(), "true").urlEncodingEnabled(false)
+        given().header(PATH_PROCESSING_STRATEGY_HEADER.getName(), PathProcessingStrategy.unmodified.name()).urlEncodingEnabled(false)
                 .when().get("resources/myres").then().assertThat().body("foo", equalTo("bar"));
         given().delete("resources/myres").then().assertThat().statusCode(200);
         jedis.flushAll();
@@ -77,7 +78,7 @@ public class CrudIntegrationTest extends RedisStorageIntegrationTestCase {
         jedis.flushAll();
 
 
-        with().urlEncodingEnabled(false).header(KEEP_DOUBLE_SLASHES_HEADER.getName(), "true")
+        with().urlEncodingEnabled(false).header(PATH_PROCESSING_STRATEGY_HEADER.getName(), PathProcessingStrategy.unmodified.name())
                 .body("{ \"foo\": \"bar\" }").put("resources//myres");
         given().urlEncodingEnabled(false).when().get("resources//myres").then().assertThat().statusCode(404);
         given().urlEncodingEnabled(false).delete("resources//myres").then().assertThat().statusCode(404);
@@ -85,17 +86,17 @@ public class CrudIntegrationTest extends RedisStorageIntegrationTestCase {
 
         with().urlEncodingEnabled(false)
                 .body("{ \"foo\": \"bar\" }").put("resources//myres");
-        given().urlEncodingEnabled(false).header(KEEP_DOUBLE_SLASHES_HEADER.getName(), "true")
+        given().urlEncodingEnabled(false).header(PATH_PROCESSING_STRATEGY_HEADER.getName(), PathProcessingStrategy.unmodified.name())
                 .when().get("resources//myres").then().assertThat().statusCode(404);
-        given().urlEncodingEnabled(false).header(KEEP_DOUBLE_SLASHES_HEADER.getName(), "true")
+        given().urlEncodingEnabled(false).header(PATH_PROCESSING_STRATEGY_HEADER.getName(), PathProcessingStrategy.unmodified.name())
                 .delete("resources//myres").then().assertThat().statusCode(404);
         jedis.flushAll();
 
-        with().urlEncodingEnabled(false).header(KEEP_DOUBLE_SLASHES_HEADER.getName(), "true")
+        with().urlEncodingEnabled(false).header(PATH_PROCESSING_STRATEGY_HEADER.getName(), PathProcessingStrategy.unmodified.name())
                 .body("{ \"foo\": \"bar\" }").put("resources//myres");
-        given().urlEncodingEnabled(false).header(KEEP_DOUBLE_SLASHES_HEADER.getName(), "true")
+        given().urlEncodingEnabled(false).header(PATH_PROCESSING_STRATEGY_HEADER.getName(), PathProcessingStrategy.unmodified.name())
                 .when().get("resources//myres").then().assertThat().body("foo", equalTo("bar"));
-        given().urlEncodingEnabled(false).header(KEEP_DOUBLE_SLASHES_HEADER.getName(), "true")
+        given().urlEncodingEnabled(false).header(PATH_PROCESSING_STRATEGY_HEADER.getName(), PathProcessingStrategy.unmodified.name())
                 .delete("resources//myres").then().assertThat().statusCode(200);
 
         async.complete();

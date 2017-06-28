@@ -10,6 +10,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.runner.RunWith;
 import org.swisspush.reststorage.util.ModuleConfiguration;
+import org.swisspush.reststorage.util.ModuleConfiguration.PathProcessingStrategy;
+import org.swisspush.reststorage.util.ModuleConfiguration.StorageType;
 import redis.clients.jedis.Jedis;
 
 @RunWith(VertxUnitRunner.class)
@@ -29,8 +31,9 @@ public abstract class RedisStorageIntegrationTestCase extends ConfigurableTestCa
         RestAssured.defaultParser = Parser.JSON;
 
         ModuleConfiguration modConfig = ModuleConfiguration.with()
-                .storageType(ModuleConfiguration.StorageType.redis)
+                .storageType(StorageType.redis)
                 .confirmCollectionDelete(true)
+                .pathProcessingStrategy(PathProcessingStrategy.cleaned)
                 .storageAddress("rest-storage")
                 .build();
 
