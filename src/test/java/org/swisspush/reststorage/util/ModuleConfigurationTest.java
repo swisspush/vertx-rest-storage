@@ -37,6 +37,7 @@ public class ModuleConfigurationTest {
         testContext.assertFalse(config.isConfirmCollectionDelete());
         testContext.assertFalse(config.isRejectStorageWriteOnLowMemory());
         testContext.assertEquals(config.getFreeMemoryCheckIntervalMs(), 60000L);
+        testContext.assertEquals(config.getPathProcessingStrategy(), PathProcessingStrategy.cleaned);
     }
 
     @Test
@@ -48,6 +49,7 @@ public class ModuleConfigurationTest {
                 .confirmCollectionDelete(true)
                 .rejectStorageWriteOnLowMemory(true)
                 .freeMemoryCheckIntervalMs(10000)
+                .pathProcessingStrategy(PathProcessingStrategy.unmodified)
                 .build();
 
         // default values
@@ -74,6 +76,7 @@ public class ModuleConfigurationTest {
         testContext.assertTrue(config.isConfirmCollectionDelete());
         testContext.assertTrue(config.isRejectStorageWriteOnLowMemory());
         testContext.assertEquals(config.getFreeMemoryCheckIntervalMs(), 10000L);
+        testContext.assertEquals(config.getPathProcessingStrategy(), PathProcessingStrategy.unmodified);
     }
 
     @Test
@@ -99,6 +102,7 @@ public class ModuleConfigurationTest {
         testContext.assertFalse(json.getBoolean(PROP_CONFIRM_COLLECTIONDELETE));
         testContext.assertFalse(json.getBoolean(PROP_REJECT_ON_LOW_MEMORY_ENABLED));
         testContext.assertEquals(json.getLong(PROP_FREE_MEMORY_CHECK_INTERVAL), 60000L);
+        testContext.assertEquals(json.getString(PROP_PATH_PROCESSING_STRATEGY), PathProcessingStrategy.cleaned.name());
     }
 
     @Test
@@ -111,6 +115,7 @@ public class ModuleConfigurationTest {
                 .confirmCollectionDelete(true)
                 .rejectStorageWriteOnLowMemory(true)
                 .freeMemoryCheckIntervalMs(5000)
+                .pathProcessingStrategy(PathProcessingStrategy.unmodified)
                 .build();
 
         JsonObject json = config.asJsonObject();
@@ -136,6 +141,7 @@ public class ModuleConfigurationTest {
         testContext.assertTrue(json.getBoolean(PROP_CONFIRM_COLLECTIONDELETE));
         testContext.assertTrue(json.getBoolean(PROP_REJECT_ON_LOW_MEMORY_ENABLED));
         testContext.assertEquals(config.getFreeMemoryCheckIntervalMs(), 5000L);
+        testContext.assertEquals(json.getString(PROP_PATH_PROCESSING_STRATEGY), PathProcessingStrategy.unmodified.name());
 
         testContext.assertNotNull(json.getJsonObject(PROP_EDITOR_CONFIG));
         testContext.assertTrue(json.getJsonObject(PROP_EDITOR_CONFIG).containsKey("myKey"));
@@ -165,6 +171,7 @@ public class ModuleConfigurationTest {
         testContext.assertFalse(config.isConfirmCollectionDelete());
         testContext.assertFalse(config.isRejectStorageWriteOnLowMemory());
         testContext.assertEquals(config.getFreeMemoryCheckIntervalMs(), 60000L);
+        testContext.assertEquals(config.getPathProcessingStrategy(), PathProcessingStrategy.cleaned);
     }
 
     @Test
@@ -189,6 +196,7 @@ public class ModuleConfigurationTest {
         json.put(PROP_CONFIRM_COLLECTIONDELETE, true);
         json.put(PROP_REJECT_ON_LOW_MEMORY_ENABLED, true);
         json.put(PROP_FREE_MEMORY_CHECK_INTERVAL, 30000);
+        json.put(PROP_PATH_PROCESSING_STRATEGY, "unmodified");
 
         ModuleConfiguration config = fromJsonObject(json);
         testContext.assertEquals(config.getRoot(), "newroot");
@@ -213,5 +221,6 @@ public class ModuleConfigurationTest {
         testContext.assertTrue(config.isConfirmCollectionDelete());
         testContext.assertTrue(config.isRejectStorageWriteOnLowMemory());
         testContext.assertEquals(config.getFreeMemoryCheckIntervalMs(), 30000L);
+        testContext.assertEquals(config.getPathProcessingStrategy(), PathProcessingStrategy.unmodified);
     }
 }

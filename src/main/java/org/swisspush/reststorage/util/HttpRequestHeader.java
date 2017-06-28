@@ -17,6 +17,7 @@ public enum HttpRequestHeader {
     EXPIRE_AFTER_HEADER("x-expire-after"),
     IMPORTANCE_LEVEL_HEADER("x-importance-level"),
     COMPRESS_HEADER("x-stored-compressed"),
+    PATH_PROCESSING_STRATEGY_HEADER("x-path-processing-strategy"),
     CONTENT_TYPE("Content-Type"),
     CONTENT_LENGTH("Content-Length");
 

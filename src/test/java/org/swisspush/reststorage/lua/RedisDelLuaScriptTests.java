@@ -37,6 +37,26 @@ public class RedisDelLuaScriptTests extends AbstractLuaScriptTest {
     }
 
     @Test
+    public void deleteResource2BranchesDeleteOnRootNodeWithDoubleColons() {
+
+        // ARRANGE
+        evalScriptPut(":project:server:test::test1:test2", "{\"content\": \"test/test1/test2\"}");
+        evalScriptPut(":project:server:test::test11:test22", "{\"content\": \"test/test1/test2\"}");
+
+        // ACT
+        evalScriptDel(":project");
+
+        // ASSERT
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project", getNowAsDouble(), 9999999999999d).size(), equalTo(0));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project:server", getNowAsDouble(), 9999999999999d).size(), equalTo(0));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project:server:test", getNowAsDouble(), 9999999999999d).size(), equalTo(0));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project:server:test::test1", getNowAsDouble(), 9999999999999d).size(), equalTo(0));
+        assertThat(jedis.exists("rest-storage:resources:project:server:test::test11:test2"), equalTo(false));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project:server:test::test11", getNowAsDouble(), 9999999999999d).size(), equalTo(0));
+        assertThat(jedis.exists("rest-storage:resources:project:server:test::test11:test22"), equalTo(false));
+    }
+
+    @Test
     public void deleteResource2BranchesDeleteOnForkNode() {
 
         // ARRANGE

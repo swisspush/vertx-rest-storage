@@ -12,6 +12,7 @@ import io.vertx.core.streams.Pump;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import org.swisspush.reststorage.util.LockMode;
+import org.swisspush.reststorage.util.ModuleConfiguration.PathProcessingStrategy;
 import org.swisspush.reststorage.util.ResourceNameUtil;
 import org.swisspush.reststorage.util.StatusCode;
 
@@ -21,6 +22,7 @@ import java.util.Map.Entry;
 
 import static org.swisspush.reststorage.util.HttpRequestHeader.*;
 import static org.swisspush.reststorage.util.HttpRequestParam.*;
+import static org.swisspush.reststorage.util.ModuleConfiguration.PathProcessingStrategy.*;
 
 public class RestStorageHandler implements Handler<HttpServerRequest> {
 
@@ -38,15 +40,18 @@ public class RestStorageHandler implements Handler<HttpServerRequest> {
     private boolean confirmCollectionDelete;
     private boolean rejectStorageWriteOnLowMemory;
     private DecimalFormat decimalFormat;
+    private PathProcessingStrategyFinder pathProcessingStrategyFinder;
 
     public RestStorageHandler(Vertx vertx, final Logger log, final Storage storage, final String prefix,
-                              JsonObject editorConfig, final boolean confirmCollectionDelete, final boolean rejectStorageWriteOnLowMemory) {
+                              JsonObject editorConfig, final boolean confirmCollectionDelete, final boolean rejectStorageWriteOnLowMemory,
+                              PathProcessingStrategyFinder pathProcessingStrategyFinder) {
         this.router = Router.router(vertx);
         this.log = log;
         this.storage = storage;
         this.prefix = prefix;
         this.confirmCollectionDelete = confirmCollectionDelete;
         this.rejectStorageWriteOnLowMemory = rejectStorageWriteOnLowMemory;
+        this.pathProcessingStrategyFinder = pathProcessingStrategyFinder;
 
         this.decimalFormat = new DecimalFormat();
         this.decimalFormat.setMaximumFractionDigits(1);
@@ -117,7 +122,7 @@ public class RestStorageHandler implements Handler<HttpServerRequest> {
     }
 
     private void getResource(RoutingContext ctx) {
-        final String path = cleanPath(ctx.request().path().substring(prefixFixed.length()));
+        final String path = cleanPath(ctx);
         final String etag = ctx.request().headers().get(IF_NONE_MATCH_HEADER.getName());
         if (log.isTraceEnabled()) {
             log.trace("RestStorageHandler got GET Request path: " + path + " etag: " + etag);
@@ -126,6 +131,7 @@ public class RestStorageHandler implements Handler<HttpServerRequest> {
         String offsetFromUrl = getString(params, OFFSET_PARAMETER);
         String limitFromUrl = getString(params, LIMIT_PARAMETER);
         OffsetLimit offsetLimit = UrlParser.offsetLimit(offsetFromUrl, limitFromUrl);
+        final PathProcessingStrategy pathProcessingStrategy = pathProcessingStrategyFinder.getPathProcessingStrategy(ctx.request().headers());
         storage.get(path, etag, offsetLimit.offset, offsetLimit.limit, new Handler<Resource>() {
             public void handle(Resource resource) {
                 if (log.isTraceEnabled()) {
@@ -230,7 +236,7 @@ public class RestStorageHandler implements Handler<HttpServerRequest> {
                         if (log.isTraceEnabled()) {
                             log.trace("RestStorageHandler resource is a DocumentResource: " + ctx.request().uri());
                         }
-                        if (ctx.request().uri().endsWith("/")) {
+                        if (ctx.request().uri().endsWith("/") && pathProcessingStrategy == cleaned) {
                             if (log.isTraceEnabled()) {
                                 log.trace("RestStorageHandler DocumentResource ends with /");
                             }
@@ -299,7 +305,7 @@ public class RestStorageHandler implements Handler<HttpServerRequest> {
 
     private void putResource(RoutingContext ctx) {
         ctx.request().pause();
-        final String path = cleanPath(ctx.request().path().substring(prefixFixed.length()));
+        final String path = cleanPath(ctx);
 
         MultiMap headers = ctx.request().headers();
 
@@ -460,7 +466,7 @@ public class RestStorageHandler implements Handler<HttpServerRequest> {
     }
 
     private void deleteResource(RoutingContext ctx) {
-        final String path = cleanPath(ctx.request().path().substring(prefixFixed.length()));
+        final String path = cleanPath(ctx);
         if (log.isTraceEnabled()) {
             log.trace("RestStorageHandler delete resource: " + ctx.request().uri());
         }
@@ -550,7 +556,7 @@ public class RestStorageHandler implements Handler<HttpServerRequest> {
                         return;
                     }
 
-                    final String path = cleanPath(ctx.request().path().substring(prefixFixed.length()));
+                    final String path = cleanPath(ctx);
                     final String etag = ctx.request().headers().get(IF_NONE_MATCH_HEADER.getName());
                     storage.storageExpand(path, etag, subResourceNames, resource -> {
 
@@ -624,15 +630,29 @@ public class RestStorageHandler implements Handler<HttpServerRequest> {
     // End Router handling    //
     ////////////////////////////
 
-    private String cleanPath(String value) {
-        value = value.replaceAll("\\.\\.", "").replaceAll("\\/\\/", "/");
-        while (value.endsWith("/")) {
-            value = value.substring(0, value.length() - 1);
+    private String cleanPath(RoutingContext ctx) {
+        String path = ctx.request().path().substring(prefixFixed.length());
+        path = path.replaceAll("\\.\\.", "");
+
+        PathProcessingStrategy pathProcessingStrategy = pathProcessingStrategyFinder.getPathProcessingStrategy(ctx.request().headers());
+        if(cleaned == pathProcessingStrategy){
+            log.debug("about to clean path '" + path + "'");
+            path = path.replaceAll("\\/\\/", "/");
+            while (path.endsWith("/")) {
+                path = path.substring(0, path.length() - 1);
+            }
+            log.debug("cleaned path is now '" + path + "'");
+        } else if(unmodified == pathProcessingStrategy){
+            log.debug("not going to modify path '" + path + "' because path processing strategy is " + pathProcessingStrategy.name());
+        } else {
+            log.warn("not supported path processing strategy '"+pathProcessingStrategy.name()+"' for path '" + path +
+                    "'. Path will be handled like '"+ unmodified.name()+"' path processing strategy");
         }
-        if (value.isEmpty()) {
+
+        if (path.isEmpty()) {
             return "/";
         }
-        return value;
+        return path;
     }
 
     public static class OffsetLimit {

@@ -185,6 +185,24 @@ The data compression feature is not compatible with all vertx-rest-storage featu
 * Compressed resources cannot be used in _storageExpand_ requests. _storageExpand_ requests to a collection containing a compressed resource will be rejected.
 * If a resource is already stored in a different compression state (state = not compressed, compressed) as the compression of sent resource, the stored resource will be overwritten in every case. Like this we prevent unexpected behaviour considering the etag mechanism. 
 
+### Path processing strategy
+The _pathProcessingStrategy_ can be defined via module configuration. The default processing strategy is _cleaned_ which performs a path cleanup for _GET_, _PUT_, _DELETE_ and _StorageExpand_ requests.
+This cleanup contains the removal of double slashes and trailing slashes from the request path before handling it.
+
+Example:
+
+> PUT /storage/resources//resource_1/
+
+becomes
+
+> PUT /storage/resources/resource_1
+
+The _pathProcessingStrategy_ can be configured to _unmodified_, which does not remove double slashes and trailing slashes from the request paths.
+
+#### Override path processing strategy
+The default path processing strategy defined via the _pathProcessingStrategy_ property can be overridden for single requests by passing a http request header:
+> x-path-processing-strategy: [cleaned | unmodified]
+
 ## Configuration
 
 The following configuration values are available:
@@ -192,7 +210,8 @@ The following configuration values are available:
 | Property | Type | Default value | Description | 
 |:--------- | :----------- | :----------- | :----------- |
 | root | common | . | The prefix for the directory or redis key |
-| storageType | common | filesystem | The storage implementation to use. Choose between filesystem or redis |
+| storageType | common | filesystem | The storage implementation to use. Choose between _filesystem_ or _redis_ |
+| pathProcessingStrategy | common | cleaned | When cleaned option is selected, double-slashes and trailing slashes will be removed from paths before handling. Choose between _cleaned_ or _unmodified_ |
 | port | common | 8989 | The port the mod listens to. |
 | prefix | common | / | The part of the URL path before this handler (aka "context path" in JEE terminology) |
 | storageAddress | common | resource-storage | The eventbus address the mod listens to. |

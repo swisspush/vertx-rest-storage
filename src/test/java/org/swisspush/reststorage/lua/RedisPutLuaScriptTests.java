@@ -36,6 +36,23 @@ public class RedisPutLuaScriptTests extends AbstractLuaScriptTest {
     }
 
     @Test
+    public void putResourcePathDepthIs3WithDoubleColons() {
+
+        // ACT
+        evalScriptPut(":project:server::test::test1:test2", "{\"content\": \"test/test1/test2\"}");
+
+        // ASSERT
+        assertThat("server", equalTo(jedis.zrangeByScore("rest-storage:collections:project", 0d, 9999999999999d).iterator().next()));
+        assertThat("", equalTo(jedis.zrangeByScore("rest-storage:collections:project:server", 0d, 9999999999999d).iterator().next()));
+        assertThat("test", equalTo(jedis.zrangeByScore("rest-storage:collections:project:server:", 0d, 9999999999999d).iterator().next()));
+        assertThat("", equalTo(jedis.zrangeByScore("rest-storage:collections:project:server::test", 0d, 9999999999999d).iterator().next()));
+        assertThat("test1", equalTo(jedis.zrangeByScore("rest-storage:collections:project:server::test:", 0d, 9999999999999d).iterator().next()));
+        assertThat("test2", equalTo(jedis.zrangeByScore("rest-storage:collections:project:server::test::test1", 0d, 9999999999999d).iterator().next()));
+        assertThat("{\"content\": \"test/test1/test2\"}", equalTo(jedis.hget("rest-storage:resources:project:server::test::test1:test2", RESOURCE)));
+    }
+
+
+    @Test
     public void putResourcePathDepthIs3WithSiblings() {
 
         // ACT

@@ -27,6 +27,7 @@ public class ModuleConfiguration {
     private boolean confirmCollectionDelete;
     private boolean rejectStorageWriteOnLowMemory;
     private long freeMemoryCheckIntervalMs;
+    private PathProcessingStrategy pathProcessingStrategy;
 
     public static final String PROP_ROOT = "root";
     public static final String PROP_STORAGE_TYPE = "storageType";
@@ -46,9 +47,29 @@ public class ModuleConfiguration {
     public static final String PROP_CONFIRM_COLLECTIONDELETE = "confirmCollectionDelete";
     public static final String PROP_REJECT_ON_LOW_MEMORY_ENABLED = "rejectStorageWriteOnLowMemory";
     public static final String PROP_FREE_MEMORY_CHECK_INTERVAL = "freeMemoryCheckIntervalMs";
+    public static final String PROP_PATH_PROCESSING_STRATEGY = "pathProcessingStrategy";
 
     public enum StorageType {
         filesystem, redis
+    }
+
+    public enum PathProcessingStrategy {
+        unmodified, cleaned;
+
+        /**
+         * Returns the enum PathProcessingStrategy which matches the specified String value.
+         *
+         * @param strategyStr The strategy as String
+         * @return The matching PathProcessingStrategy or null if none matches.
+         */
+        public static PathProcessingStrategy fromString(String strategyStr) {
+            for (PathProcessingStrategy strategy : values()) {
+                if (strategy.name().equalsIgnoreCase(strategyStr)) {
+                    return strategy;
+                }
+            }
+            return null;
+        }
     }
 
     /**
@@ -63,7 +84,8 @@ public class ModuleConfiguration {
                                JsonObject editorConfig, String redisHost, int redisPort, String expirablePrefix,
                                String resourcesPrefix, String collectionsPrefix, String deltaResourcesPrefix,
                                String deltaEtagsPrefix, long resourceCleanupAmount, String lockPrefix,
-                               boolean confirmCollectionDelete, boolean rejectStorageWriteOnLowMemory, long freeMemoryCheckIntervalMs) {
+                               boolean confirmCollectionDelete, boolean rejectStorageWriteOnLowMemory,
+                               long freeMemoryCheckIntervalMs, PathProcessingStrategy pathProcessingStrategy) {
         this.root = root;
         this.storageType = storageType;
         this.port = port;
@@ -82,6 +104,7 @@ public class ModuleConfiguration {
         this.confirmCollectionDelete = confirmCollectionDelete;
         this.rejectStorageWriteOnLowMemory = rejectStorageWriteOnLowMemory;
         this.freeMemoryCheckIntervalMs = freeMemoryCheckIntervalMs;
+        this.pathProcessingStrategy = pathProcessingStrategy;
     }
 
     public static ModuleConfigurationBuilder with(){
@@ -92,7 +115,7 @@ public class ModuleConfiguration {
         this(builder.root, builder.storageType, builder.port, builder.prefix, builder.storageAddress, builder.editorConfig,
                 builder.redisHost, builder.redisPort, builder.expirablePrefix, builder.resourcesPrefix, builder.collectionsPrefix,
                 builder.deltaResourcesPrefix, builder.deltaEtagsPrefix, builder.resourceCleanupAmount, builder.lockPrefix,
-                builder.confirmCollectionDelete, builder.rejectStorageWriteOnLowMemory, builder.freeMemoryCheckIntervalMs);
+                builder.confirmCollectionDelete, builder.rejectStorageWriteOnLowMemory, builder.freeMemoryCheckIntervalMs, builder.pathProcessingStrategy);
     }
 
     public JsonObject asJsonObject(){
@@ -115,6 +138,7 @@ public class ModuleConfiguration {
         obj.put(PROP_CONFIRM_COLLECTIONDELETE, isConfirmCollectionDelete());
         obj.put(PROP_REJECT_ON_LOW_MEMORY_ENABLED, isRejectStorageWriteOnLowMemory());
         obj.put(PROP_FREE_MEMORY_CHECK_INTERVAL, getFreeMemoryCheckIntervalMs());
+        obj.put(PROP_PATH_PROCESSING_STRATEGY, getPathProcessingStrategy().name());
         return obj;
     }
 
@@ -174,6 +198,9 @@ public class ModuleConfiguration {
         if(json.containsKey(PROP_FREE_MEMORY_CHECK_INTERVAL)){
             builder.freeMemoryCheckIntervalMs(json.getLong(PROP_FREE_MEMORY_CHECK_INTERVAL));
         }
+        if(json.containsKey(PROP_PATH_PROCESSING_STRATEGY)){
+            builder.pathProcessingStrategyFromString(json.getString(PROP_PATH_PROCESSING_STRATEGY));
+        }
         return builder.build();
     }
 
@@ -181,9 +208,7 @@ public class ModuleConfiguration {
         return root;
     }
 
-    public StorageType getStorageType() {
-        return storageType;
-    }
+    public StorageType getStorageType() {return storageType; }
 
     public int getPort() {
         return port;
@@ -241,6 +266,8 @@ public class ModuleConfiguration {
 
     public long getFreeMemoryCheckIntervalMs() { return freeMemoryCheckIntervalMs; }
 
+    public PathProcessingStrategy getPathProcessingStrategy() { return pathProcessingStrategy; }
+
     @Override
     public String toString() {
         return asJsonObject().toString();
@@ -277,8 +304,10 @@ public class ModuleConfiguration {
         private boolean confirmCollectionDelete;
         private boolean rejectStorageWriteOnLowMemory;
         private long freeMemoryCheckIntervalMs;
+        private PathProcessingStrategy pathProcessingStrategy;
 
         private static final long DEFAULT_FREE_MEMORY_CHECK_INTERVAL = 60000; // 60s
+        private static final PathProcessingStrategy DEFAULT_PATH_PROCESSING_STRATEGY = PathProcessingStrategy.cleaned;
 
         public ModuleConfigurationBuilder(){
             this.root = ".";
@@ -299,6 +328,7 @@ public class ModuleConfiguration {
             this.confirmCollectionDelete = false;
             this.rejectStorageWriteOnLowMemory = false;
             this.freeMemoryCheckIntervalMs = DEFAULT_FREE_MEMORY_CHECK_INTERVAL;
+            this.pathProcessingStrategy = DEFAULT_PATH_PROCESSING_STRATEGY;
         }
 
         public ModuleConfigurationBuilder root(String root){
@@ -400,6 +430,23 @@ public class ModuleConfiguration {
 
         public ModuleConfigurationBuilder freeMemoryCheckIntervalMs(long freeMemoryCheckIntervalMs) {
             this.freeMemoryCheckIntervalMs = freeMemoryCheckIntervalMs;
+            return this;
+        }
+
+        public ModuleConfigurationBuilder pathProcessingStrategy(PathProcessingStrategy pathProcessingStrategy){
+            this.pathProcessingStrategy = pathProcessingStrategy;
+            return this;
+        }
+
+        public ModuleConfigurationBuilder pathProcessingStrategyFromString(String pathProcessingStrategy){
+            for(PathProcessingStrategy strategy : PathProcessingStrategy.values()){
+                if (strategy.name().equalsIgnoreCase(pathProcessingStrategy)){
+                    this.pathProcessingStrategy = strategy;
+                }
+            }
+            if(this.pathProcessingStrategy == null) {
+                this.pathProcessingStrategy = DEFAULT_PATH_PROCESSING_STRATEGY;
+            }
             return this;
         }
 

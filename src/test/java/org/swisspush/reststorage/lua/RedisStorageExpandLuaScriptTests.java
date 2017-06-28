@@ -45,6 +45,28 @@ public class RedisStorageExpandLuaScriptTests extends AbstractLuaScriptTest {
     }
 
     @Test
+    public void testStorageExpandWithDoubleColons() {
+
+        // ARRANGE
+        evalScriptPut(":project:server:test::item1", "{\"content\": \"content_1\"}");
+        evalScriptPut(":project:server:test::item2", "{\"content\": \"content_2\"}");
+        evalScriptPut(":project:server:test::item3", "{\"content\": \"content_3\"}");
+
+        // ACT
+        List<String> subResources = Arrays.asList("item2", "item1", "item3");
+        List<List<String>> value = evalScriptStorageExpandAndExtract(":project:server:test:", subResources);
+
+        // ASSERT
+        assertThat(value.size(), equalTo(3));
+        assertThat(value.get(0).get(0), equalTo("item2"));
+        assertThat(value.get(0).get(1), equalTo("{\"content\": \"content_2\"}"));
+        assertThat(value.get(1).get(0), equalTo("item1"));
+        assertThat(value.get(1).get(1), equalTo("{\"content\": \"content_1\"}"));
+        assertThat(value.get(2).get(0), equalTo("item3"));
+        assertThat(value.get(2).get(1), equalTo("{\"content\": \"content_3\"}"));
+    }
+
+    @Test
     public void testStorageExpandEmptySubresources() {
 
         // ARRANGE
