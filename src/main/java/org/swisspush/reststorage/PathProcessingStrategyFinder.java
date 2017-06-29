@@ -18,10 +18,17 @@ public class PathProcessingStrategyFinder {
 
     private Logger log = LoggerFactory.getLogger(PathProcessingStrategyFinder.class);
     private final PathProcessingStrategy pathProcessingStrategy;
+    private static final PathProcessingStrategy DEFAULT_PATH_PROCESSING_STRATEGY = PathProcessingStrategy.cleaned;
 
     public PathProcessingStrategyFinder(PathProcessingStrategy pathProcessingStrategy) {
-        this.pathProcessingStrategy = pathProcessingStrategy;
-        log.info("Setting default path processing strategy to '"+this.pathProcessingStrategy.name()+"'");
+        if(pathProcessingStrategy == null){
+            log.warn("Cannot initialize PathProcessingStrategyFinder with null value. " +
+                    "Going to use default path processing strategy '"+DEFAULT_PATH_PROCESSING_STRATEGY.name()+"' instead");
+            this.pathProcessingStrategy = DEFAULT_PATH_PROCESSING_STRATEGY;
+        } else {
+            this.pathProcessingStrategy = pathProcessingStrategy;
+            log.info("Setting default path processing strategy to '"+this.pathProcessingStrategy.name()+"'");
+        }
     }
 
     /**

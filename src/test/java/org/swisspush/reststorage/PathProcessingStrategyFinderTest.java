@@ -22,7 +22,10 @@ public class PathProcessingStrategyFinderTest {
 
     @Test
     public void testGetDefaultPathProcessingStrategy(TestContext context){
-        PathProcessingStrategyFinder strategyFinder = new PathProcessingStrategyFinder(unmodified);
+        PathProcessingStrategyFinder strategyFinder = new PathProcessingStrategyFinder(null);
+        context.assertEquals(cleaned, strategyFinder.getDefaultPathProcessingStrategy());
+
+        strategyFinder = new PathProcessingStrategyFinder(unmodified);
         context.assertEquals(unmodified, strategyFinder.getDefaultPathProcessingStrategy());
     }
 

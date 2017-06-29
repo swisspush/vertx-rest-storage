@@ -643,7 +643,7 @@ public class RestStorageHandler implements Handler<HttpServerRequest> {
             }
             log.debug("cleaned path is now '" + path + "'");
         } else if(unmodified == pathProcessingStrategy){
-            log.debug("not going to modify path '" + path + "' because path processing strategy is " + pathProcessingStrategy.name());
+            log.debug("not going to modify path '" + path + "' because path processing strategy is '" + pathProcessingStrategy.name() + "'");
         } else {
             log.warn("not supported path processing strategy '"+pathProcessingStrategy.name()+"' for path '" + path +
                     "'. Path will be handled like '"+ unmodified.name()+"' path processing strategy");
