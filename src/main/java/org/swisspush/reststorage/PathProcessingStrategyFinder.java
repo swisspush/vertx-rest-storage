@@ -1,6 +1,8 @@
 package org.swisspush.reststorage;
 
 import io.vertx.core.MultiMap;
+import io.vertx.core.logging.Logger;
+import io.vertx.core.logging.LoggerFactory;
 import org.swisspush.reststorage.util.HttpRequestHeader;
 import org.swisspush.reststorage.util.ModuleConfiguration.PathProcessingStrategy;
 
@@ -13,10 +15,13 @@ import static org.swisspush.reststorage.util.HttpRequestHeader.getString;
  * @author https://github.com/mcweba [Marc-Andre Weber]
  */
 public class PathProcessingStrategyFinder {
+
+    private Logger log = LoggerFactory.getLogger(PathProcessingStrategyFinder.class);
     private final PathProcessingStrategy pathProcessingStrategy;
 
     public PathProcessingStrategyFinder(PathProcessingStrategy pathProcessingStrategy) {
         this.pathProcessingStrategy = pathProcessingStrategy;
+        log.info("Setting default path processing strategy to '"+this.pathProcessingStrategy.name()+"'");
     }
 
     /**
@@ -37,14 +42,18 @@ public class PathProcessingStrategyFinder {
      */
     public PathProcessingStrategy getPathProcessingStrategy(MultiMap requestHeaders) {
         if(requestHeaders == null){
+            log.info("Requests headers are null. Going to use default path processing strategy '"+pathProcessingStrategy.name()+"' instead");
             return pathProcessingStrategy;
         }
         if(HttpRequestHeader.containsHeader(requestHeaders, PATH_PROCESSING_STRATEGY_HEADER)){
             PathProcessingStrategy strategy = PathProcessingStrategy.fromString(getString(requestHeaders, PATH_PROCESSING_STRATEGY_HEADER));
             if(strategy != null){
+                log.debug("Default path processing strategy '"+pathProcessingStrategy.name()+"' is overridden by "
+                        + PATH_PROCESSING_STRATEGY_HEADER.getName() + " header to '"+strategy.name()+"'");
                 return strategy;
             }
         }
+        log.debug("Requests headers do not contain a (valid) "+PATH_PROCESSING_STRATEGY_HEADER.getName()+" header. Going to use default path processing strategy '"+pathProcessingStrategy.name()+"' instead");
         return pathProcessingStrategy;
     }
 }
