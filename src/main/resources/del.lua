@@ -1,5 +1,9 @@
 local sep = ":";
 local toDelete = KEYS[1]
+
+
+-- Important: This Script here is includes in cleanup.lua. The ARGV-Array is used again in this including script
+-- Remember to harmonize the cleanup.lua ARGV parameters with ordering, format and purpose here in THIS script
 local resourcesPrefix = ARGV[1]
 local collectionsPrefix = ARGV[2]
 local deltaResourcesPrefix = ARGV[3]
