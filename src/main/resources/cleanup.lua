@@ -9,7 +9,15 @@ local confirmCollectionDelete = ARGV[8]
 local deleteRecursive = ARGV[9]
 local now = tonumber(ARGV[10])
 local bulksize = tonumber(ARGV[11])
-local delScriptSha = ARGV[12]
+
+-- Important: The ARGV-Array is used again in the included del.lua script
+-- (see this funny comment with the percent sign below and Java-Method
+--      org.swisspush.reststorage.RedisStorage.LuaScriptState.composeLuaScript)
+-- we need to initialize all parameters for del.lua here - otherwise we can have side effects
+ARGV[10] = ''
+ARGV[11] = ''
+ARGV[12] = ''
+ARGV[13] = ''
 
 local resourcePrefixLength = string.len(resourcesPrefix)
 local counter = 0
