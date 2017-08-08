@@ -51,7 +51,12 @@ public class RedisStorage implements Storage {
     private Optional<Float> currentMemoryUsageOptional = Optional.empty();
 
     public RedisStorage(Vertx vertx, ModuleConfiguration config) {
-        this(vertx, config, RedisClient.create(vertx, new RedisOptions().setHost(config.getRedisHost()).setPort(config.getRedisPort())));
+        this(vertx, config, RedisClient.create(vertx, new RedisOptions()
+                        .setHost(config.getRedisHost())
+                        .setPort(config.getRedisPort())
+                        .setAuth(config.getRedisAuth())
+                )
+        );
     }
 
     public RedisStorage(Vertx vertx, ModuleConfiguration config, RedisClient redisClient) {
