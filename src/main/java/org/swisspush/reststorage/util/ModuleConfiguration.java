@@ -17,6 +17,7 @@ public class ModuleConfiguration {
     private JsonObject editorConfig;
     private String redisHost;
     private int redisPort;
+    private String redisAuth;
     private String expirablePrefix;
     private String resourcesPrefix;
     private String collectionsPrefix;
@@ -36,6 +37,7 @@ public class ModuleConfiguration {
     public static final String PROP_EDITOR_CONFIG = "editorConfig";
     public static final String PROP_REDIS_HOST = "redisHost";
     public static final String PROP_REDIS_PORT = "redisPort";
+    public static final String PROP_REDIS_AUTH = "redisAuth";
     public static final String PROP_EXP_PREFIX = "expirablePrefix";
     public static final String PROP_RES_PREFIX = "resourcesPrefix";
     public static final String PROP_COL_PREFIX = "collectionsPrefix";
@@ -60,7 +62,7 @@ public class ModuleConfiguration {
     }
 
     public ModuleConfiguration(String root, StorageType storageType, int port, String prefix, String storageAddress,
-                               JsonObject editorConfig, String redisHost, int redisPort, String expirablePrefix,
+                               JsonObject editorConfig, String redisHost, int redisPort, String redisAuth, String expirablePrefix,
                                String resourcesPrefix, String collectionsPrefix, String deltaResourcesPrefix,
                                String deltaEtagsPrefix, long resourceCleanupAmount, String lockPrefix,
                                boolean confirmCollectionDelete, boolean rejectStorageWriteOnLowMemory, long freeMemoryCheckIntervalMs) {
@@ -72,6 +74,7 @@ public class ModuleConfiguration {
         this.editorConfig = editorConfig;
         this.redisHost = redisHost;
         this.redisPort = redisPort;
+        this.redisAuth = redisAuth;
         this.expirablePrefix = expirablePrefix;
         this.resourcesPrefix = resourcesPrefix;
         this.collectionsPrefix = collectionsPrefix;
@@ -90,7 +93,7 @@ public class ModuleConfiguration {
 
     private ModuleConfiguration(ModuleConfigurationBuilder builder){
         this(builder.root, builder.storageType, builder.port, builder.prefix, builder.storageAddress, builder.editorConfig,
-                builder.redisHost, builder.redisPort, builder.expirablePrefix, builder.resourcesPrefix, builder.collectionsPrefix,
+                builder.redisHost, builder.redisPort, builder.redisAuth, builder.expirablePrefix, builder.resourcesPrefix, builder.collectionsPrefix,
                 builder.deltaResourcesPrefix, builder.deltaEtagsPrefix, builder.resourceCleanupAmount, builder.lockPrefix,
                 builder.confirmCollectionDelete, builder.rejectStorageWriteOnLowMemory, builder.freeMemoryCheckIntervalMs);
     }
@@ -105,6 +108,7 @@ public class ModuleConfiguration {
         obj.put(PROP_EDITOR_CONFIG, getEditorConfig());
         obj.put(PROP_REDIS_HOST, getRedisHost());
         obj.put(PROP_REDIS_PORT, getRedisPort());
+        obj.put(PROP_REDIS_AUTH, getRedisAuth());
         obj.put(PROP_EXP_PREFIX, getExpirablePrefix());
         obj.put(PROP_RES_PREFIX, getResourcesPrefix());
         obj.put(PROP_COL_PREFIX, getCollectionsPrefix());
@@ -143,6 +147,9 @@ public class ModuleConfiguration {
         }
         if(json.containsKey(PROP_REDIS_PORT)){
             builder.redisPort(json.getInteger(PROP_REDIS_PORT));
+        }
+        if(json.containsKey(PROP_REDIS_AUTH)){
+            builder.redisAuth(json.getString(PROP_REDIS_AUTH));
         }
         if(json.containsKey(PROP_EXP_PREFIX)){
             builder.expirablePrefix(json.getString(PROP_EXP_PREFIX));
@@ -209,6 +216,10 @@ public class ModuleConfiguration {
         return redisPort;
     }
 
+    public String getRedisAuth() {
+        return redisAuth;
+    }
+
     public String getExpirablePrefix() {
         return expirablePrefix;
     }
@@ -267,6 +278,7 @@ public class ModuleConfiguration {
         private JsonObject editorConfig;
         private String redisHost;
         private int redisPort;
+        private String redisAuth;
         private String expirablePrefix;
         private String resourcesPrefix;
         private String collectionsPrefix;
@@ -350,6 +362,11 @@ public class ModuleConfiguration {
 
         public ModuleConfigurationBuilder redisPort(int redisPort){
             this.redisPort = redisPort;
+            return this;
+        }
+
+        public ModuleConfigurationBuilder redisAuth(String redisAuth){
+            this.redisAuth = redisAuth;
             return this;
         }
 
