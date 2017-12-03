@@ -1,6 +1,7 @@
 package org.swisspush.reststorage;
 
 import io.netty.handler.codec.http.QueryStringDecoder;
+import io.vertx.codegen.annotations.Nullable;
 import io.vertx.core.*;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.eventbus.Message;
@@ -11,6 +12,7 @@ import io.vertx.core.net.NetSocket;
 import io.vertx.core.net.SocketAddress;
 
 import javax.net.ssl.SSLPeerUnverifiedException;
+import javax.net.ssl.SSLSession;
 import javax.security.cert.X509Certificate;
 import java.util.List;
 import java.util.Map;
@@ -215,6 +217,11 @@ public class EventBusAdapter {
                     }
 
                     @Override
+                    public HttpServerResponse endHandler(@Nullable Handler<Void> handler) {
+                        return this;
+                    }
+
+                    @Override
                     public HttpServerResponse write(Buffer buffer) {
                         responsePayload.appendBuffer(buffer);
                         return this;
@@ -354,12 +361,22 @@ public class EventBusAdapter {
                     }
 
                     @Override
+                    public void reset() {
+                        throw new UnsupportedOperationException();
+                    }
+
+                    @Override
                     public void reset(long code) {
                         throw new UnsupportedOperationException();
                     }
 
                     @Override
                     public HttpServerResponse writeCustomFrame(int type, int flags, Buffer payload) {
+                        throw new UnsupportedOperationException();
+                    }
+
+                    @Override
+                    public HttpServerResponse writeCustomFrame(HttpFrame frame) {
                         throw new UnsupportedOperationException();
                     }
 
@@ -394,7 +411,7 @@ public class EventBusAdapter {
 
         @Override
         public String getHeader(String headerName) {
-            throw new UnsupportedOperationException();
+            return requestHeaders.get(headerName);
         }
 
         @Override
@@ -433,6 +450,11 @@ public class EventBusAdapter {
         }
 
         @Override
+        public SSLSession sslSession() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public X509Certificate[] peerCertificateChain() throws SSLPeerUnverifiedException {
             return new X509Certificate[0];
         }
@@ -446,11 +468,7 @@ public class EventBusAdapter {
         public HttpServerRequest bodyHandler(final Handler<Buffer> bodyHandler) {
             final Buffer body = Buffer.buffer();
             handler(body::appendBuffer);
-            endHandler(new VoidHandler() {
-                public void handle() {
-                    bodyHandler.handle(body);
-                }
-            });
+            endHandler(aVoid -> bodyHandler.handle(body));
             return this;
         }
 
