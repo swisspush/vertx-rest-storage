@@ -51,9 +51,9 @@ public class FileSystemStorage implements Storage {
                             for (final String item : event1.result()) {
                                 fileSystem().props(item, itemProp -> {
                                     Resource r;
-                                    if (itemProp.result().isDirectory()) {
+                                    if (itemProp.succeeded() && itemProp.result().isDirectory()) {
                                         r = new CollectionResource();
-                                    } else if (itemProp.result().isRegularFile()) {
+                                    } else if (itemProp.succeeded() && itemProp.result().isRegularFile()) {
                                         r = new DocumentResource();
                                     } else {
                                         r = new Resource();
