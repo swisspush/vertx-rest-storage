@@ -17,18 +17,18 @@ then
     if [ $rc -eq 0 ]
     then
         groovy staging.groovy close
-        groovy staging.groovy promote
-        rc=$?
-        if [ $rc -ne 0 ]
-        then
-          echo 'Release failed: can not promote stage'
-          exit rc
-        fi
-        echo 'Release done, will push'
-        git tag
-        git push --tags
-        git checkout develop
-        git push origin develop
+#        groovy staging.groovy promote
+#        rc=$?
+#        if [ $rc -ne 0 ]
+#        then
+#          echo 'Release failed: can not promote stage'
+#          exit rc
+#        fi
+#        echo 'Release done, will push'
+#        git tag
+#        git push --tags
+#        git checkout develop
+#        git push origin develop
       exit 0
     fi
     echo 'Release failed'
