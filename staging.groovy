@@ -1,14 +1,5 @@
 import groovy.json.JsonSlurper
 
-class Example {
-
-    static void main(String[] args) {
-        def stagingHelper = new Staging(System.getenv("CI_DEPLOY_USERNAME"), System.getenv("CI_DEPLOY_PASSWORD"));
-        stagingHelper.run(args[0]);
-    }
-
-}
-
 class Staging {
     int delayBetweenRetries = 30
     int numberOfRetries = 10
@@ -20,7 +11,12 @@ class Staging {
         ossPassword = password
     }
 
-    public void run(String cmd) {
+    static void main(String[] args) {
+        def stagingHelper = new Staging(System.getenv("CI_DEPLOY_USERNAME"), System.getenv("CI_DEPLOY_PASSWORD"));
+        stagingHelper.run(args[0]);
+    }
+
+    private void run(String cmd) {
         switch (cmd) {
             case "close":
                 println "trying to close nexus repository ..."
@@ -33,7 +29,7 @@ class Staging {
                     def stagingProfileId = this.getStagingProfileId()
                     doWithRetry(this.&drop)
                 } catch (Exception e) {
-                    println "No repository to drop found."
+                    println "No repository to drop found? " + e
                 }
                 println " > done"
                 break;
@@ -47,7 +43,7 @@ class Staging {
 
     int doWithRetry(Closure operation) {
         int counter = 0
-        int numberOfAttempts = Integer.valueOf(numberOfRetries) + 1
+        int numberOfAttempts = Integer.valueOf(numberOfRetries)
         while (true) {
             try {
                 counter++
@@ -62,6 +58,8 @@ class Staging {
                 } else {
                     waitBeforeNextAttempt()
                 }
+            }finally{
+                counter++
             }
         }
     }
@@ -81,6 +79,7 @@ class Staging {
 
         // drop repository
         def response = ['bash', '-c', "curl -sL -w \"%{http_code}\" -H \"Content-Type: application/json\" -X POST -d '" + data + "' https://" + ossUserName + ":" + ossPassword + "@oss.sonatype.org/service/local/staging/profiles/" + stagingProfileId + "/drop -o /dev/null"].execute().text
+        println response
 
         if (Integer.valueOf(response) > 299) {
             throw new IllegalArgumentException("HTTP request failed, getting status code: ${response}")
@@ -119,8 +118,6 @@ class Staging {
 
         // promote repository
         def response = ['bash', '-c', "curl -sL -w \"%{http_code}\" -H \"Content-Type: application/json\" -X POST -d '" + data + "' https://" + ossUserName + ":" + ossPassword + "@oss.sonatype.org/service/local/staging/profiles/" + stagingProfileId + "/promote -o /dev/null"].execute().text
-        println response
-
         if (Integer.valueOf(response) > 299) {
             throw new IllegalArgumentException("HTTP request failed, getting status code: ${response}")
         }
