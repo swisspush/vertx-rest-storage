@@ -46,7 +46,6 @@ class Staging {
         int numberOfAttempts = Integer.valueOf(numberOfRetries)
         while (true) {
             try {
-                counter++
                 println "Attempt $counter/$numberOfAttempts..."
                 if (operation() == 0) {
                     return 0
