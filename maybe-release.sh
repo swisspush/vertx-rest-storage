@@ -10,7 +10,7 @@ then
     rc=$?
     if [ $rc -ne 0 ]
     then
-      echo 'problem when try to drop, will continue..'
+      echo 'problem when trying to drop, ignored'
     fi
     mvn -B -Prelease jgitflow:release-start jgitflow:release-finish --settings settings.xml
     rc=$?
@@ -21,7 +21,7 @@ then
         rc=$?
         if [ $rc -ne 0 ]
         then
-          echo 'Release failed: can not promote stage'
+          echo 'Release failed, cannot promote stage'
           exit rc
         fi
         echo 'Release done, will push'
