@@ -56,7 +56,7 @@ class Staging {
                 } else {
                     waitBeforeNextAttempt()
                 }
-            }finally{
+            } finally {
                 counter++
             }
         }
