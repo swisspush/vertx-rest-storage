@@ -2,7 +2,7 @@ import groovy.json.JsonSlurper
 
 class Staging {
     int delayBetweenRetries = 30
-    int numberOfRetries = 10
+    int numberOfRetries = 20
     String ossUserName
     String ossPassword
 
@@ -12,8 +12,8 @@ class Staging {
     }
 
     static void main(String[] args) {
-        def stagingHelper = new Staging(System.getenv("CI_DEPLOY_USERNAME"), System.getenv("CI_DEPLOY_PASSWORD"));
-        stagingHelper.run(args[0]);
+        def stagingHelper = new Staging(System.getenv("CI_DEPLOY_USERNAME"), System.getenv("CI_DEPLOY_PASSWORD"))
+        stagingHelper.run(args[0])
     }
 
     private void run(String cmd) {
@@ -22,22 +22,21 @@ class Staging {
                 println "trying to close nexus repository ..."
                 doWithRetry(this.&close)
                 println " > done"
-                break;
+                break
             case "drop":
                 println "trying to drop nexus repository ..."
                 try {
-                    def stagingProfileId = this.getStagingProfileId()
                     doWithRetry(this.&drop)
                 } catch (Exception e) {
                     println "No repository to drop found? " + e
                 }
                 println " > done"
-                break;
+                break
             case "promote":
                 println "trying to promote nexus repository ..."
                 doWithRetry(this.&promote)
                 println " > done"
-                break;
+                break
         }
     }
 
@@ -69,7 +68,7 @@ class Staging {
 
     int drop() {
         def stagingProfileId = getStagingProfileId()
-        def repositoryId = getRepositoryId(stagingProfileId, "released");
+        def repositoryId = getRepositoryId(stagingProfileId, "released")
         if (repositoryId == null) {
             println("No more action.")
             return 0
@@ -89,7 +88,7 @@ class Staging {
 
     int close() {
         def stagingProfileId = getStagingProfileId()
-        def repositoryId = getRepositoryId(stagingProfileId, "open");
+        def repositoryId = getRepositoryId(stagingProfileId, "open")
         if (repositoryId == null) {
             println("No more action.")
             return 0
@@ -108,7 +107,7 @@ class Staging {
 
     int promote() {
         def stagingProfileId = getStagingProfileId()
-        def repositoryId = getRepositoryId(stagingProfileId, "closed");
+        def repositoryId = getRepositoryId(stagingProfileId, "closed")
         if (repositoryId == null) {
             println("No more action.")
             return 0
@@ -128,8 +127,8 @@ class Staging {
 
         def json = new JsonSlurper().parseText(response)
         def profileList = json.data
-        int found = 0;
-        String stagingProfileId = "";
+        Integer found = 0
+        String stagingProfileId = ""
         for (int index = 0; index < profileList.size(); index++) {
             if (profileList[index].name.equals("org.swisspush")) {
                 found++;
@@ -148,7 +147,7 @@ class Staging {
         return stagingProfileId
     }
 
-    public getRepositoryId(String stagingProfileId, String state) {
+    def getRepositoryId(String stagingProfileId, String state) {
         def response = ['bash', '-c', "curl -s -H \"Accept: application/json\" -X GET https://" + ossUserName + ":" + ossPassword + "@oss.sonatype.org/service/local/staging/profile_repositories/" + stagingProfileId].execute().text
         def json = new JsonSlurper().parseText(response)
         println(response)
@@ -162,12 +161,12 @@ class Staging {
         def repository = json.data[0]
 
         // check state - close
-        if (state.equals("open") && !repository.type.equals(state)) {
+        if (state == "open" && repository.type != state) {
             println("No open repository found!")
             return null
         }
 
-        if (state.equals("closed") && !repository.type.equals(state)) {
+        if (state == "closed" && repository.type != state) {
             println("No closed repository found!")
             return null
         }
@@ -177,7 +176,7 @@ class Staging {
         return repository.repositoryId
     }
 
-    String getData(String stagingProfileId, String repositoryId) {
+    static String getData(String stagingProfileId, String repositoryId) {
         return "{\"data\" : {\"stagedRepositoryId\" : " + repositoryId + ",\"description\" : \"Automatically released/promoted with Travis\",  \"targetRepositoryId\" : " + stagingProfileId + " }}"
     }
 
