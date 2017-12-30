@@ -34,7 +34,7 @@ Runs either as a module or can be integrated into an existing application by ins
   * OS X: `brew install redis`
   * [Windows](https://github.com/MSOpenTech/redis/releases/download/win-2.8.2400/Redis-x64-2.8.2400.zip)
   * [Other](http://redis.io/download)
-3. run `gradle build -x test`
+3. run `mvn install -Dmaven.test.skip=true`
 4. run the fatjar with `java -jar build/libs/rest-storage-x.x.x-all.jar
 5. you get a rest-storage, that stores to the filesystem in the directory where you started it. If you want to use the rest-storage with redis, you have to pass the configuration over a json file with `-conf conf.json`
 
@@ -245,16 +245,6 @@ Caution: The redis storage implementation does not currently support streaming. 
 
 ## Dependencies
 This module uses Vert.x v3.3.3 (or later), so **Java 8** is required.
-
-## Use gradle with alternative repositories
-As standard the default maven repositories are set.
-You can overwrite these repositories by setting these properties (`-Pproperty=value`):
-
-* `repository` this is the repository where resources are fetched
-* `uploadRepository` the repository used in `uploadArchives` for releases
-* `snapshotRepository` the repository used in `uploadArchives` for snapshot
-* `repoUsername` the username for uploading archives
-* `repoPassword` the password for uploading archives
 
 
 [![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/lbovet/vertx-rest-storage/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
