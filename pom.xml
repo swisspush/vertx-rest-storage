@@ -16,18 +16,6 @@
             <distribution>repo</distribution>
         </license>
     </licenses>
-    <developers>
-        <developer>
-            <id>floriankammermann</id>
-            <name>Florian Kammermann</name>
-            <url>https://github.com/floriankammermann</url>
-        </developer>
-        <developer>
-            <id>mcweba</id>
-            <name>Marc-Andre Weber</name>
-            <url>https://github.com/mcweba</url>
-        </developer>
-    </developers>
     <scm>
         <url>https://github.com/swisspush/vertx-rest-storage.git</url>
     </scm>
@@ -51,12 +39,6 @@
             <scope>compile</scope>
         </dependency>
         <dependency>
-            <groupId>io.vertx</groupId>
-            <artifactId>vertx-codegen</artifactId>
-            <version>3.3.3</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
             <groupId>commons-codec</groupId>
             <artifactId>commons-codec</artifactId>
             <version>1.9</version>
@@ -68,13 +50,18 @@
             <version>2.4</version>
             <scope>compile</scope>
         </dependency>
+
+        <!-- TEST dependencies -->
         <dependency>
+            <!--
+                Grrrr. Damn JUnit.jar contains org.hamcrest classes. We need a newer version of Hamcrest in a few tests.
+                Therefore the need to depend on it _before_ JUnit
+            -->
             <groupId>org.hamcrest</groupId>
             <artifactId>hamcrest-core</artifactId>
             <version>1.3</version>
-            <scope>compile</scope>
+            <scope>test</scope>
         </dependency>
-        <!-- TEST dependencies -->
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
@@ -82,15 +69,15 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>com.jayway.restassured</groupId>
-            <artifactId>rest-assured</artifactId>
-            <version>2.4.1</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
             <groupId>io.vertx</groupId>
             <artifactId>vertx-unit</artifactId>
             <version>3.3.3</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.jayway.restassured</groupId>
+            <artifactId>rest-assured</artifactId>
+            <version>2.4.1</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -106,21 +93,9 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>com.github.kstyrc</groupId>
-            <artifactId>embedded-redis</artifactId>
-            <version>0.6</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-context</artifactId>
-            <version>4.1.0.RELEASE</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-jdbc</artifactId>
-            <version>4.1.0.RELEASE</version>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>2.5</version>
             <scope>test</scope>
         </dependency>
         <dependency>
