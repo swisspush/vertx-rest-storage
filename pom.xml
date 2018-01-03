@@ -23,32 +23,27 @@
         <dependency>
             <groupId>io.vertx</groupId>
             <artifactId>vertx-core</artifactId>
-            <version>3.3.3</version>
-            <scope>compile</scope>
+            <version>3.5.0</version>
         </dependency>
         <dependency>
             <groupId>io.vertx</groupId>
             <artifactId>vertx-redis-client</artifactId>
-            <version>3.4.2</version>
-            <scope>compile</scope>
+            <version>3.5.0</version>
         </dependency>
         <dependency>
             <groupId>io.vertx</groupId>
             <artifactId>vertx-web</artifactId>
-            <version>3.3.3</version>
-            <scope>compile</scope>
+            <version>3.5.0</version>
         </dependency>
         <dependency>
             <groupId>commons-codec</groupId>
             <artifactId>commons-codec</artifactId>
             <version>1.9</version>
-            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>commons-lang</groupId>
             <artifactId>commons-lang</artifactId>
             <version>2.4</version>
-            <scope>compile</scope>
         </dependency>
 
         <!-- TEST dependencies -->
@@ -71,7 +66,7 @@
         <dependency>
             <groupId>io.vertx</groupId>
             <artifactId>vertx-unit</artifactId>
-            <version>3.3.3</version>
+            <version>3.5.0</version>
             <scope>test</scope>
         </dependency>
         <dependency>
