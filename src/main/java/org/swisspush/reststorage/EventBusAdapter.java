@@ -403,7 +403,7 @@ public class EventBusAdapter {
 
         @Override
         public String getHeader(String headerName) {
-            throw new UnsupportedOperationException();
+            return null;
         }
 
         @Override
