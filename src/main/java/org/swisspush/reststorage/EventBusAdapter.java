@@ -403,12 +403,12 @@ public class EventBusAdapter {
 
         @Override
         public String getHeader(String headerName) {
-            return null;
+            return requestHeaders.get(headerName);
         }
 
         @Override
         public String getHeader(CharSequence headerName) {
-            throw new UnsupportedOperationException();
+            return requestHeaders.get(headerName);
         }
 
         @Override
@@ -428,7 +428,7 @@ public class EventBusAdapter {
 
         @Override
         public String getParam(String paramName) {
-            throw new UnsupportedOperationException();
+            return params.get(paramName);
         }
 
         @Override
