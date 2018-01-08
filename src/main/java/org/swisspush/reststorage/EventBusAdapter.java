@@ -1,7 +1,10 @@
 package org.swisspush.reststorage;
 
 import io.netty.handler.codec.http.QueryStringDecoder;
-import io.vertx.core.*;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Handler;
+import io.vertx.core.MultiMap;
+import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.eventbus.Message;
 import io.vertx.core.http.*;
@@ -11,6 +14,7 @@ import io.vertx.core.net.NetSocket;
 import io.vertx.core.net.SocketAddress;
 
 import javax.net.ssl.SSLPeerUnverifiedException;
+import javax.net.ssl.SSLSession;
 import javax.security.cert.X509Certificate;
 import java.util.List;
 import java.util.Map;
@@ -211,7 +215,12 @@ public class EventBusAdapter {
 
                     @Override
                     public HttpServerResponse closeHandler(Handler<Void> voidHandler) {
-                        return this;
+                        throw new UnsupportedOperationException();
+                    }
+
+                    @Override
+                    public HttpServerResponse endHandler(Handler<Void> handler) {
+                        throw new UnsupportedOperationException();
                     }
 
                     @Override
@@ -394,12 +403,12 @@ public class EventBusAdapter {
 
         @Override
         public String getHeader(String headerName) {
-            throw new UnsupportedOperationException();
+            return requestHeaders.get(headerName);
         }
 
         @Override
         public String getHeader(CharSequence headerName) {
-            throw new UnsupportedOperationException();
+            return requestHeaders.get(headerName);
         }
 
         @Override
@@ -419,7 +428,7 @@ public class EventBusAdapter {
 
         @Override
         public String getParam(String paramName) {
-            throw new UnsupportedOperationException();
+            return params.get(paramName);
         }
 
         @Override
@@ -433,6 +442,11 @@ public class EventBusAdapter {
         }
 
         @Override
+        public SSLSession sslSession() {
+            return null;
+        }
+
+        @Override
         public X509Certificate[] peerCertificateChain() throws SSLPeerUnverifiedException {
             return new X509Certificate[0];
         }
@@ -440,18 +454,6 @@ public class EventBusAdapter {
         @Override
         public String absoluteURI() {
             return null;
-        }
-
-        @Override
-        public HttpServerRequest bodyHandler(final Handler<Buffer> bodyHandler) {
-            final Buffer body = Buffer.buffer();
-            handler(body::appendBuffer);
-            endHandler(new VoidHandler() {
-                public void handle() {
-                    bodyHandler.handle(body);
-                }
-            });
-            return this;
         }
 
         @Override
