@@ -16,6 +16,21 @@
             <distribution>repo</distribution>
         </license>
     </licenses>
+
+
+    <developers>
+        <developer>
+            <id>floriankammermann</id>
+            <name>Florian Kammermann</name>
+            <url>https://github.com/floriankammermann</url>
+        </developer>
+        <developer>
+            <id>mcweba</id>
+            <name>Marc-Andre Weber</name>
+            <url>https://github.com/mcweba</url>
+        </developer>
+    </developers>
+
     <scm>
         <url>https://github.com/swisspush/vertx-rest-storage.git</url>
     </scm>
