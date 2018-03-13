@@ -2,6 +2,8 @@ package org.swisspush.reststorage.util;
 
 import io.vertx.core.json.JsonObject;
 
+import java.util.Map;
+
 /**
  * Utility class to configure the RestStorageModule.
  *
@@ -9,180 +11,137 @@ import io.vertx.core.json.JsonObject;
  */
 public class ModuleConfiguration {
 
-    private String root;
-    private StorageType storageType;
-    private int port;
-    private String prefix;
-    private String storageAddress;
-    private JsonObject editorConfig;
-    private String redisHost;
-    private int redisPort;
-    private String redisAuth;
-    private String expirablePrefix;
-    private String resourcesPrefix;
-    private String collectionsPrefix;
-    private String deltaResourcesPrefix;
-    private String deltaEtagsPrefix;
-    private long resourceCleanupAmount;
-    private String lockPrefix;
-    private boolean confirmCollectionDelete;
-    private boolean rejectStorageWriteOnLowMemory;
-    private long freeMemoryCheckIntervalMs;
-
-    public static final String PROP_ROOT = "root";
-    public static final String PROP_STORAGE_TYPE = "storageType";
-    public static final String PROP_PORT = "port";
-    public static final String PROP_PREFIX = "prefix";
-    public static final String PROP_STORAGE_ADDRESS = "storageAddress";
-    public static final String PROP_EDITOR_CONFIG = "editorConfig";
-    public static final String PROP_REDIS_HOST = "redisHost";
-    public static final String PROP_REDIS_PORT = "redisPort";
-    public static final String PROP_REDIS_AUTH = "redisAuth";
-    public static final String PROP_EXP_PREFIX = "expirablePrefix";
-    public static final String PROP_RES_PREFIX = "resourcesPrefix";
-    public static final String PROP_COL_PREFIX = "collectionsPrefix";
-    public static final String PROP_DELTA_RES_PREFIX = "deltaResourcesPrefix";
-    public static final String PROP_DELTA_ETAGS_PREFIX = "deltaEtagsPrefix";
-    public static final String PROP_RES_CLEANUP_AMMOUNT = "resourceCleanupAmount";
-    public static final String PROP_LOCK_PREFIX = "lockPrefix";
-    public static final String PROP_CONFIRM_COLLECTIONDELETE = "confirmCollectionDelete";
-    public static final String PROP_REJECT_ON_LOW_MEMORY_ENABLED = "rejectStorageWriteOnLowMemory";
-    public static final String PROP_FREE_MEMORY_CHECK_INTERVAL = "freeMemoryCheckIntervalMs";
-
     public enum StorageType {
         filesystem, redis
     }
 
-    /**
-     * Constructor with default values. Use the {@link org.swisspush.reststorage.util.ModuleConfiguration.ModuleConfigurationBuilder} class
-     * for simplyfied custom configuration.
-     */
-    public ModuleConfiguration(){
-        this(new ModuleConfigurationBuilder());
-    }
+    private String             root                          = "."                       ;
+    private StorageType        storageType                   = StorageType.filesystem    ;
+    private int                port                          = 8989                      ;
+    private String             prefix                        = ""                        ;
+    private String             storageAddress                = "resource-storage"        ;
+    private Map<String,String> editorConfig                  = null                      ;
+    private String             redisHost                     = "localhost"               ;
+    private int                redisPort                     = 6379                      ;
+    private String             redisAuth                     = null                      ;
+    private String             expirablePrefix               = "rest-storage:expirable"  ;
+    private String             resourcesPrefix               = "rest-storage:resources"  ;
+    private String             collectionsPrefix             = "rest-storage:collections";
+    private String             deltaResourcesPrefix          = "delta:resources"         ;
+    private String             deltaEtagsPrefix              = "delta:etags"             ;
+    private long               resourceCleanupAmount         = 100_000L                  ;
+    private String             lockPrefix                    = "rest-storage:locks"      ;
+    private boolean            confirmCollectionDelete       = false                     ;
+    private boolean            rejectStorageWriteOnLowMemory = false                     ;
+    private long               freeMemoryCheckIntervalMs     = 60_000L                   ;
+    private boolean            return200onDeleteNonExisting  = false                     ;
 
-    public ModuleConfiguration(String root, StorageType storageType, int port, String prefix, String storageAddress,
-                               JsonObject editorConfig, String redisHost, int redisPort, String redisAuth, String expirablePrefix,
-                               String resourcesPrefix, String collectionsPrefix, String deltaResourcesPrefix,
-                               String deltaEtagsPrefix, long resourceCleanupAmount, String lockPrefix,
-                               boolean confirmCollectionDelete, boolean rejectStorageWriteOnLowMemory, long freeMemoryCheckIntervalMs) {
+    public ModuleConfiguration root(String root) {
         this.root = root;
+        return this;
+    }
+
+    public ModuleConfiguration storageType(StorageType storageType) {
         this.storageType = storageType;
+        return this;
+    }
+
+    public ModuleConfiguration storageTypeFromString(String storageType) throws IllegalArgumentException {
+        this.storageType = StorageType.valueOf(storageType); // let it throw IAEx in case of unknown string value
+        return this;
+    }
+
+    public ModuleConfiguration port(int port) {
         this.port = port;
+        return this;
+    }
+
+    public ModuleConfiguration prefix(String prefix) {
         this.prefix = prefix;
+        return this;
+    }
+
+    public ModuleConfiguration storageAddress(String storageAddress) {
         this.storageAddress = storageAddress;
+        return this;
+    }
+
+    public ModuleConfiguration editorConfig(Map<String,String> editorConfig) {
         this.editorConfig = editorConfig;
+        return this;
+    }
+
+    public ModuleConfiguration redisHost(String redisHost) {
         this.redisHost = redisHost;
+        return this;
+    }
+
+    public ModuleConfiguration redisPort(int redisPort) {
         this.redisPort = redisPort;
+        return this;
+    }
+
+    public ModuleConfiguration redisAuth(String redisAuth) {
         this.redisAuth = redisAuth;
+        return this;
+    }
+
+    public ModuleConfiguration expirablePrefix(String expirablePrefix) {
         this.expirablePrefix = expirablePrefix;
+        return this;
+    }
+
+    public ModuleConfiguration resourcesPrefix(String resourcesPrefix) {
         this.resourcesPrefix = resourcesPrefix;
+        return this;
+    }
+
+    public ModuleConfiguration collectionsPrefix(String collectionsPrefix) {
         this.collectionsPrefix = collectionsPrefix;
+        return this;
+    }
+
+    public ModuleConfiguration deltaResourcesPrefix(String deltaResourcesPrefix) {
         this.deltaResourcesPrefix = deltaResourcesPrefix;
+        return this;
+    }
+
+    public ModuleConfiguration deltaEtagsPrefix(String deltaEtagsPrefix) {
         this.deltaEtagsPrefix = deltaEtagsPrefix;
+        return this;
+    }
+
+    public ModuleConfiguration resourceCleanupAmount(long resourceCleanupAmount) {
         this.resourceCleanupAmount = resourceCleanupAmount;
+        return this;
+    }
+
+    public ModuleConfiguration lockPrefix(String lockPrefix) {
         this.lockPrefix = lockPrefix;
+        return this;
+    }
+
+    public ModuleConfiguration confirmCollectionDelete(boolean confirmCollectionDelete) {
         this.confirmCollectionDelete = confirmCollectionDelete;
+        return this;
+    }
+
+    public ModuleConfiguration rejectStorageWriteOnLowMemory(boolean rejectStorageWriteOnLowMemory) {
         this.rejectStorageWriteOnLowMemory = rejectStorageWriteOnLowMemory;
+        return this;
+    }
+
+    public ModuleConfiguration freeMemoryCheckIntervalMs(long freeMemoryCheckIntervalMs) {
         this.freeMemoryCheckIntervalMs = freeMemoryCheckIntervalMs;
+        return this;
     }
 
-    public static ModuleConfigurationBuilder with(){
-        return new ModuleConfigurationBuilder();
+    public ModuleConfiguration return200onDeleteNonExisting(boolean deleteNonExistingReturn200) {
+        this.return200onDeleteNonExisting = deleteNonExistingReturn200;
+        return this;
     }
 
-    private ModuleConfiguration(ModuleConfigurationBuilder builder){
-        this(builder.root, builder.storageType, builder.port, builder.prefix, builder.storageAddress, builder.editorConfig,
-                builder.redisHost, builder.redisPort, builder.redisAuth, builder.expirablePrefix, builder.resourcesPrefix, builder.collectionsPrefix,
-                builder.deltaResourcesPrefix, builder.deltaEtagsPrefix, builder.resourceCleanupAmount, builder.lockPrefix,
-                builder.confirmCollectionDelete, builder.rejectStorageWriteOnLowMemory, builder.freeMemoryCheckIntervalMs);
-    }
 
-    public JsonObject asJsonObject(){
-        JsonObject obj = new JsonObject();
-        obj.put(PROP_ROOT, getRoot());
-        obj.put(PROP_STORAGE_TYPE, getStorageType().name());
-        obj.put(PROP_PORT, getPort());
-        obj.put(PROP_PREFIX, getPrefix());
-        obj.put(PROP_STORAGE_ADDRESS, getStorageAddress());
-        obj.put(PROP_EDITOR_CONFIG, getEditorConfig());
-        obj.put(PROP_REDIS_HOST, getRedisHost());
-        obj.put(PROP_REDIS_PORT, getRedisPort());
-        obj.put(PROP_REDIS_AUTH, getRedisAuth());
-        obj.put(PROP_EXP_PREFIX, getExpirablePrefix());
-        obj.put(PROP_RES_PREFIX, getResourcesPrefix());
-        obj.put(PROP_COL_PREFIX, getCollectionsPrefix());
-        obj.put(PROP_DELTA_RES_PREFIX, getDeltaResourcesPrefix());
-        obj.put(PROP_DELTA_ETAGS_PREFIX, getDeltaEtagsPrefix());
-        obj.put(PROP_RES_CLEANUP_AMMOUNT, getResourceCleanupAmount());
-        obj.put(PROP_LOCK_PREFIX, getLockPrefix());
-        obj.put(PROP_CONFIRM_COLLECTIONDELETE, isConfirmCollectionDelete());
-        obj.put(PROP_REJECT_ON_LOW_MEMORY_ENABLED, isRejectStorageWriteOnLowMemory());
-        obj.put(PROP_FREE_MEMORY_CHECK_INTERVAL, getFreeMemoryCheckIntervalMs());
-        return obj;
-    }
-
-    public static ModuleConfiguration fromJsonObject(JsonObject json){
-        ModuleConfigurationBuilder builder = ModuleConfiguration.with();
-        if(json.containsKey(PROP_ROOT)){
-            builder.root(json.getString(PROP_ROOT));
-        }
-        if(json.containsKey(PROP_STORAGE_TYPE)){
-            builder.storageTypeFromString(json.getString(PROP_STORAGE_TYPE));
-        }
-        if(json.containsKey(PROP_PORT)){
-            builder.port(json.getInteger(PROP_PORT));
-        }
-        if(json.containsKey(PROP_PREFIX)){
-            builder.prefix(json.getString(PROP_PREFIX));
-        }
-        if(json.containsKey(PROP_STORAGE_ADDRESS)){
-            builder.storageAddress(json.getString(PROP_STORAGE_ADDRESS));
-        }
-        if(json.containsKey(PROP_EDITOR_CONFIG)){
-            builder.editorConfig(json.getJsonObject(PROP_EDITOR_CONFIG));
-        }
-        if(json.containsKey(PROP_REDIS_HOST)){
-            builder.redisHost(json.getString(PROP_REDIS_HOST));
-        }
-        if(json.containsKey(PROP_REDIS_PORT)){
-            builder.redisPort(json.getInteger(PROP_REDIS_PORT));
-        }
-        if(json.containsKey(PROP_REDIS_AUTH)){
-            builder.redisAuth(json.getString(PROP_REDIS_AUTH));
-        }
-        if(json.containsKey(PROP_EXP_PREFIX)){
-            builder.expirablePrefix(json.getString(PROP_EXP_PREFIX));
-        }
-        if(json.containsKey(PROP_RES_PREFIX)){
-            builder.resourcesPrefix(json.getString(PROP_RES_PREFIX));
-        }
-        if(json.containsKey(PROP_COL_PREFIX)){
-            builder.collectionsPrefix(json.getString(PROP_COL_PREFIX));
-        }
-        if(json.containsKey(PROP_DELTA_RES_PREFIX)){
-            builder.deltaResourcesPrefix(json.getString(PROP_DELTA_RES_PREFIX));
-        }
-        if(json.containsKey(PROP_DELTA_ETAGS_PREFIX)){
-            builder.deltaEtagsPrefix(json.getString(PROP_DELTA_ETAGS_PREFIX));
-        }
-        if(json.containsKey(PROP_RES_CLEANUP_AMMOUNT)){
-            builder.resourceCleanupAmount(json.getLong(PROP_RES_CLEANUP_AMMOUNT));
-        }
-        if(json.containsKey(PROP_LOCK_PREFIX)) {
-            builder.lockPrefix(json.getString(PROP_LOCK_PREFIX));
-        }
-        if(json.containsKey(PROP_CONFIRM_COLLECTIONDELETE)){
-            builder.confirmCollectionDelete(json.getBoolean(PROP_CONFIRM_COLLECTIONDELETE));
-        }
-        if(json.containsKey(PROP_REJECT_ON_LOW_MEMORY_ENABLED)){
-            builder.rejectStorageWriteOnLowMemory(json.getBoolean(PROP_REJECT_ON_LOW_MEMORY_ENABLED));
-        }
-        if(json.containsKey(PROP_FREE_MEMORY_CHECK_INTERVAL)){
-            builder.freeMemoryCheckIntervalMs(json.getLong(PROP_FREE_MEMORY_CHECK_INTERVAL));
-        }
-        return builder.build();
-    }
 
     public String getRoot() {
         return root;
@@ -204,7 +163,7 @@ public class ModuleConfiguration {
         return storageAddress;
     }
 
-    public JsonObject getEditorConfig() {
+    public Map<String, String> getEditorConfig() {
         return editorConfig;
     }
 
@@ -252,176 +211,22 @@ public class ModuleConfiguration {
 
     public long getFreeMemoryCheckIntervalMs() { return freeMemoryCheckIntervalMs; }
 
+    public boolean isReturn200onDeleteNonExisting() {
+        return return200onDeleteNonExisting;
+    }
+
+    public JsonObject asJsonObject(){
+        return JsonObject.mapFrom(this);
+    }
+
+    public static ModuleConfiguration fromJsonObject(JsonObject json){
+        ModuleConfiguration mc = json.mapTo(ModuleConfiguration.class);
+        return mc;
+    }
+
     @Override
     public String toString() {
         return asJsonObject().toString();
     }
 
-    /**
-     * ModuleConfigurationBuilder class for simplyfied configuration.
-     *
-     * <pre>Usage:</pre>
-     * <pre>
-     * ModuleConfiguration config = with()
-     *      .redisHost("anotherhost")
-     *      .redisPort(1234)
-     *      .editorConfig(new JsonObject().put("myKey", "myValue"))
-     *      .build();
-     * </pre>
-     */
-    public static class ModuleConfigurationBuilder {
-        private String root;
-        private StorageType storageType;
-        private int port;
-        private String prefix;
-        private String storageAddress;
-        private JsonObject editorConfig;
-        private String redisHost;
-        private int redisPort;
-        private String redisAuth;
-        private String expirablePrefix;
-        private String resourcesPrefix;
-        private String collectionsPrefix;
-        private String deltaResourcesPrefix;
-        private String deltaEtagsPrefix;
-        private long resourceCleanupAmount;
-        private String lockPrefix;
-        private boolean confirmCollectionDelete;
-        private boolean rejectStorageWriteOnLowMemory;
-        private long freeMemoryCheckIntervalMs;
-
-        private static final long DEFAULT_FREE_MEMORY_CHECK_INTERVAL = 60000; // 60s
-
-        public ModuleConfigurationBuilder(){
-            this.root = ".";
-            this.storageType = StorageType.filesystem;
-            this.port = 8989;
-            this.prefix = "";
-            this.storageAddress = "resource-storage";
-            this.editorConfig = null;
-            this.redisHost = "localhost";
-            this.redisPort = 6379;
-            this.expirablePrefix = "rest-storage:expirable";
-            this.resourcesPrefix = "rest-storage:resources";
-            this.collectionsPrefix = "rest-storage:collections";
-            this.deltaResourcesPrefix = "delta:resources";
-            this.deltaEtagsPrefix = "delta:etags";
-            this.resourceCleanupAmount = 100000L;
-            this.lockPrefix = "rest-storage:locks";
-            this.confirmCollectionDelete = false;
-            this.rejectStorageWriteOnLowMemory = false;
-            this.freeMemoryCheckIntervalMs = DEFAULT_FREE_MEMORY_CHECK_INTERVAL;
-        }
-
-        public ModuleConfigurationBuilder root(String root){
-            this.root = root;
-            return this;
-        }
-
-        public ModuleConfigurationBuilder storageType(StorageType storageType){
-            this.storageType = storageType;
-            return this;
-        }
-
-        public ModuleConfigurationBuilder storageTypeFromString(String storageType){
-            for(StorageType type : StorageType.values()){
-                if (type.name().equalsIgnoreCase(storageType)){
-                    this.storageType = type;
-                }
-            }
-            if(this.storageType == null) {
-                this.storageType = StorageType.filesystem;
-            }
-            return this;
-        }
-
-        public ModuleConfigurationBuilder port(int port){
-            this.port = port;
-            return this;
-        }
-
-        public ModuleConfigurationBuilder prefix(String prefix){
-            this.prefix = prefix;
-            return this;
-        }
-
-        public ModuleConfigurationBuilder storageAddress(String storageAddress){
-            this.storageAddress = storageAddress;
-            return this;
-        }
-
-        public ModuleConfigurationBuilder editorConfig(JsonObject editorConfig){
-            this.editorConfig = editorConfig;
-            return this;
-        }
-
-        public ModuleConfigurationBuilder redisHost(String redisHost){
-            this.redisHost = redisHost;
-            return this;
-        }
-
-        public ModuleConfigurationBuilder redisPort(int redisPort){
-            this.redisPort = redisPort;
-            return this;
-        }
-
-        public ModuleConfigurationBuilder redisAuth(String redisAuth){
-            this.redisAuth = redisAuth;
-            return this;
-        }
-
-        public ModuleConfigurationBuilder expirablePrefix(String expirablePrefix){
-            this.expirablePrefix = expirablePrefix;
-            return this;
-        }
-
-        public ModuleConfigurationBuilder resourcesPrefix(String resourcesPrefix){
-            this.resourcesPrefix = resourcesPrefix;
-            return this;
-        }
-
-        public ModuleConfigurationBuilder collectionsPrefix(String collectionsPrefix){
-            this.collectionsPrefix = collectionsPrefix;
-            return this;
-        }
-
-        public ModuleConfigurationBuilder deltaResourcesPrefix(String deltaResourcesPrefix){
-            this.deltaResourcesPrefix = deltaResourcesPrefix;
-            return this;
-        }
-
-        public ModuleConfigurationBuilder deltaEtagsPrefix(String deltaEtagsPrefix){
-            this.deltaEtagsPrefix = deltaEtagsPrefix;
-            return this;
-        }
-
-        public ModuleConfigurationBuilder resourceCleanupAmount(long resourceCleanupAmount){
-            this.resourceCleanupAmount = resourceCleanupAmount;
-            return this;
-        }
-
-        public ModuleConfigurationBuilder lockPrefix(String lockPrefix) {
-            this.lockPrefix = lockPrefix;
-            return this;
-        }
-
-        public ModuleConfigurationBuilder confirmCollectionDelete(boolean confirmCollectionDelete){
-            this.confirmCollectionDelete = confirmCollectionDelete;
-            return this;
-        }
-
-        public ModuleConfigurationBuilder rejectStorageWriteOnLowMemory(boolean rejectStorageWriteOnLowMemory){
-            this.rejectStorageWriteOnLowMemory = rejectStorageWriteOnLowMemory;
-            return this;
-        }
-
-        public ModuleConfigurationBuilder freeMemoryCheckIntervalMs(long freeMemoryCheckIntervalMs) {
-            this.freeMemoryCheckIntervalMs = freeMemoryCheckIntervalMs;
-            return this;
-        }
-
-        public ModuleConfiguration build(){
-            return new ModuleConfiguration(this);
-        }
-    }
 }
