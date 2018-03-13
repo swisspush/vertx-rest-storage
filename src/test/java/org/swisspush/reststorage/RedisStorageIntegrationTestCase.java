@@ -33,11 +33,19 @@ public abstract class RedisStorageIntegrationTestCase extends ConfigurableTestCa
                 .confirmCollectionDelete(true)
                 .storageAddress("rest-storage");
 
+        updateModuleConfiguration(modConfig);
+
         RestStorageMod restStorageMod = new RestStorageMod();
         vertx.deployVerticle(restStorageMod, new DeploymentOptions().setConfig(modConfig.asJsonObject()), context.asyncAssertSuccess(stringAsyncResult1 -> {
             // standard code: will called @Before every test
             RestAssured.basePath = "";
         }));
+    }
+
+    /**
+     * chance for specific unit test classes to change config here
+     */
+    protected void updateModuleConfiguration(ModuleConfiguration modConfig) {
     }
 
     @After
