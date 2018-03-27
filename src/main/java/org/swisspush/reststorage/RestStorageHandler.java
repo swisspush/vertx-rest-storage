@@ -12,51 +12,51 @@ import io.vertx.core.streams.Pump;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import org.swisspush.reststorage.util.LockMode;
+import org.swisspush.reststorage.util.ModuleConfiguration;
 import org.swisspush.reststorage.util.ResourceNameUtil;
 import org.swisspush.reststorage.util.StatusCode;
 
 import java.text.DecimalFormat;
 import java.util.*;
-import java.util.Map.Entry;
 
 import static org.swisspush.reststorage.util.HttpRequestHeader.*;
 import static org.swisspush.reststorage.util.HttpRequestParam.*;
+import static org.swisspush.reststorage.util.HttpRequestParam.getString;
 
 public class RestStorageHandler implements Handler<HttpServerRequest> {
 
-    private Logger log;
-    private Router router;
-    private Storage storage;
+    private final Logger log;
+    private final Router router;
+    private final Storage storage;
 
     private MimeTypeResolver mimeTypeResolver = new MimeTypeResolver("application/json; charset=utf-8");
 
     private Map<String, String> editors = new LinkedHashMap<>();
 
     private String newMarker = "?new=true";
-    private String prefixFixed;
-    private String prefix;
-    private boolean confirmCollectionDelete;
-    private boolean rejectStorageWriteOnLowMemory;
-    private DecimalFormat decimalFormat;
+    private final String prefixFixed;
+    private final String prefix;
+    private final boolean confirmCollectionDelete;
+    private final boolean rejectStorageWriteOnLowMemory;
+    private final boolean return200onDeleteNonExisting;
+    private final DecimalFormat decimalFormat;
 
-    public RestStorageHandler(Vertx vertx, final Logger log, final Storage storage, final String prefix,
-                              JsonObject editorConfig, final boolean confirmCollectionDelete, final boolean rejectStorageWriteOnLowMemory) {
+    public RestStorageHandler(Vertx vertx, final Logger log, final Storage storage, final ModuleConfiguration config) {
         this.router = Router.router(vertx);
         this.log = log;
         this.storage = storage;
-        this.prefix = prefix;
-        this.confirmCollectionDelete = confirmCollectionDelete;
-        this.rejectStorageWriteOnLowMemory = rejectStorageWriteOnLowMemory;
+        this.prefix = config.getPrefix();
+        this.confirmCollectionDelete = config.isConfirmCollectionDelete();
+        this.rejectStorageWriteOnLowMemory = config.isRejectStorageWriteOnLowMemory();
+        this.return200onDeleteNonExisting = config.isReturn200onDeleteNonExisting();
 
         this.decimalFormat = new DecimalFormat();
         this.decimalFormat.setMaximumFractionDigits(1);
 
         prefixFixed = prefix.equals("/") ? "" : prefix;
 
-        if (editorConfig != null) {
-            for (Entry<String, Object> entry : editorConfig.getMap().entrySet()) {
-                editors.put(entry.getKey(), entry.getValue().toString());
-            }
+        if (config.getEditorConfig() != null) {
+            editors.putAll(config.getEditorConfig());
         }
 
         router.postWithRegex(".*_cleanup").handler(this::cleanup);
@@ -516,9 +516,13 @@ public class RestStorageHandler implements Handler<HttpServerRequest> {
                         }
                         ctx.response().end(message);
                     } else if (!resource.exists) {
-                        ctx.request().response().setStatusCode(StatusCode.NOT_FOUND.getStatusCode());
-                        ctx.request().response().setStatusMessage(StatusCode.NOT_FOUND.getStatusMessage());
-                        ctx.request().response().end(StatusCode.NOT_FOUND.toString());
+                        if (return200onDeleteNonExisting) {
+                            ctx.response().end(); // just say "200 OK" - ignore that the resource-to-be-deleted was not present
+                        } else {
+                            ctx.request().response().setStatusCode(StatusCode.NOT_FOUND.getStatusCode());
+                            ctx.request().response().setStatusMessage(StatusCode.NOT_FOUND.getStatusMessage());
+                            ctx.request().response().end(StatusCode.NOT_FOUND.toString());
+                        }
                     } else {
                         ctx.request().response().end();
                     }

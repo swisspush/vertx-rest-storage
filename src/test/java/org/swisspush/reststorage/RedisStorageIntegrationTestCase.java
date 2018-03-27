@@ -28,17 +28,24 @@ public abstract class RedisStorageIntegrationTestCase extends ConfigurableTestCa
         RestAssured.registerParser("application/json; charset=utf-8", Parser.JSON);
         RestAssured.defaultParser = Parser.JSON;
 
-        ModuleConfiguration modConfig = ModuleConfiguration.with()
+        ModuleConfiguration modConfig = new ModuleConfiguration()
                 .storageType(ModuleConfiguration.StorageType.redis)
                 .confirmCollectionDelete(true)
-                .storageAddress("rest-storage")
-                .build();
+                .storageAddress("rest-storage");
+
+        updateModuleConfiguration(modConfig);
 
         RestStorageMod restStorageMod = new RestStorageMod();
         vertx.deployVerticle(restStorageMod, new DeploymentOptions().setConfig(modConfig.asJsonObject()), context.asyncAssertSuccess(stringAsyncResult1 -> {
             // standard code: will called @Before every test
             RestAssured.basePath = "";
         }));
+    }
+
+    /**
+     * chance for specific unit test classes to change config here
+     */
+    protected void updateModuleConfiguration(ModuleConfiguration modConfig) {
     }
 
     @After
