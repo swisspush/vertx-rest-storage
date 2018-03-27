@@ -13,6 +13,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mockito;
 import org.swisspush.reststorage.util.HttpRequestHeader;
+import org.swisspush.reststorage.util.ModuleConfiguration;
 import org.swisspush.reststorage.util.StatusCode;
 
 import java.util.Optional;
@@ -58,8 +59,8 @@ public class RestStorageHandlerTest {
 
     @Test
     public void testPUTWithInvalidImportanceLevelHeader(TestContext testContext) {
-        restStorageHandler = new RestStorageHandler(vertx, log, storage, "/", null,
-                false, true);
+        ModuleConfiguration config = new ModuleConfiguration().prefix("/").rejectStorageWriteOnLowMemory(true);
+        restStorageHandler = new RestStorageHandler(vertx, log, storage, config);
 
         // ARRANGE
         when(request.headers()).thenReturn(new CaseInsensitiveHeaders().add(HttpRequestHeader.IMPORTANCE_LEVEL_HEADER.getName(), "not_a_number"));
@@ -77,8 +78,8 @@ public class RestStorageHandlerTest {
 
     @Test
     public void testPUTWithEnabledRejectStorageWriteOnLowMemoryButNoHeaders(TestContext testContext) {
-        restStorageHandler = new RestStorageHandler(vertx, log, storage, "/", null,
-                false, true);
+        ModuleConfiguration config = new ModuleConfiguration().prefix("/").rejectStorageWriteOnLowMemory(true);
+        restStorageHandler = new RestStorageHandler(vertx, log, storage, config);
 
         // ACT
         restStorageHandler.handle(request);
@@ -91,8 +92,8 @@ public class RestStorageHandlerTest {
 
     @Test
     public void testPUTWithDisabledRejectStorageWriteOnLowMemoryButHeaders(TestContext testContext) {
-        restStorageHandler = new RestStorageHandler(vertx, log, storage, "/", null,
-                false, false);
+        ModuleConfiguration config = new ModuleConfiguration().prefix("/").rejectStorageWriteOnLowMemory(false);
+        restStorageHandler = new RestStorageHandler(vertx, log, storage, config);
 
         // ARRANGE
         when(request.headers()).thenReturn(new CaseInsensitiveHeaders().add(HttpRequestHeader.IMPORTANCE_LEVEL_HEADER.getName(), "50"));
@@ -108,8 +109,8 @@ public class RestStorageHandlerTest {
 
     @Test
     public void testPUTWithNoMemoryUsageAvailable(TestContext testContext) {
-        restStorageHandler = new RestStorageHandler(vertx, log, storage, "/", null,
-                false, true);
+        ModuleConfiguration config = new ModuleConfiguration().prefix("/").rejectStorageWriteOnLowMemory(true);
+        restStorageHandler = new RestStorageHandler(vertx, log, storage, config);
 
         // ARRANGE
         when(request.headers()).thenReturn(new CaseInsensitiveHeaders().add(HttpRequestHeader.IMPORTANCE_LEVEL_HEADER.getName(), "50"));
@@ -125,8 +126,8 @@ public class RestStorageHandlerTest {
 
     @Test
     public void testRejectPUTRequestWhenMemoryUsageHigherThanImportanceLevel(TestContext testContext) {
-        restStorageHandler = new RestStorageHandler(vertx, log, storage, "/", null,
-                false, true);
+        ModuleConfiguration config = new ModuleConfiguration().prefix("/").rejectStorageWriteOnLowMemory(true);
+        restStorageHandler = new RestStorageHandler(vertx, log, storage, config);
 
         // ARRANGE
         when(request.headers()).thenReturn(new CaseInsensitiveHeaders().add(HttpRequestHeader.IMPORTANCE_LEVEL_HEADER.getName(), "50"));

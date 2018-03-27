@@ -26,11 +26,10 @@ public abstract class FilesystemStorageTestCase extends ConfigurableTestCase {
         RestAssured.registerParser("application/json; charset=utf-8", Parser.JSON);
         RestAssured.defaultParser = Parser.JSON;
 
-        ModuleConfiguration modConfig = ModuleConfiguration.with()
+        ModuleConfiguration modConfig = new ModuleConfiguration()
                 .storageType(ModuleConfiguration.StorageType.filesystem)
                 .confirmCollectionDelete(true)
-                .storageAddress("rest-storage")
-                .build();
+                .storageAddress("rest-storage");
 
         RestStorageMod restStorageMod = new RestStorageMod();
         vertx.deployVerticle(restStorageMod, new DeploymentOptions().setConfig(modConfig.asJsonObject()), context.asyncAssertSuccess(stringAsyncResult1 -> {
