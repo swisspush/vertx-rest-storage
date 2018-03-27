@@ -263,7 +263,7 @@
             <id>sonatype-nexus-staging</id>
             <name>Nexus Release Repository</name>
             <url>
-                https://oss.sonatype.org/service/local/staging/deploy/maven2/
+                https://oss.sonatype.org/service/local/staging/deployByRepositoryId/${repositoryId}
             </url>
         </repository>
     </distributionManagement>
@@ -341,5 +341,6 @@
             https://oss.sonatype.org/content/repositories/snapshots/
         </sonatypeOssDistMgmtSnapshotsUrl>
         <arguments />
+        <repositoryId />
     </properties>
 </project>
