@@ -446,8 +446,8 @@ public class RestStorageHandler implements Handler<HttpServerRequest> {
             if (resource instanceof DocumentResource) {
                 final DocumentResource documentResource = (DocumentResource) resource;
                 documentResource.errorHandler = error -> {
-                    ctx.response().setStatusCode(StatusCode.BAD_REQUEST.getStatusCode());
-                    ctx.response().setStatusMessage(StatusCode.BAD_REQUEST.getStatusMessage());
+                    ctx.response().setStatusCode(StatusCode.INTERNAL_SERVER_ERROR.getStatusCode());
+                    ctx.response().setStatusMessage(StatusCode.INTERNAL_SERVER_ERROR.getStatusMessage());
                     ctx.response().end(error);
                 };
                 documentResource.endHandler = event -> ctx.response().end();
