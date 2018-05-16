@@ -60,14 +60,19 @@
             <artifactId>commons-lang</artifactId>
             <version>2.4</version>
         </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>1.7.25</version>
+        </dependency>
 
         <!-- TEST dependencies -->
         <dependency>
-        <!--
-            Grrrr. Damn JUnit.jar contains org.hamcrest classes. We need a newer version of Hamcrest in a few tests.
-            Therefore the need to depend on it _before_ JUnit
-        -->
-        <groupId>org.hamcrest</groupId>
+            <!--
+                Grrrr. Damn JUnit.jar contains org.hamcrest classes. We need a newer version of Hamcrest in a few tests.
+                Therefore the need to depend on it _before_ JUnit
+            -->
+            <groupId>org.hamcrest</groupId>
             <artifactId>hamcrest-core</artifactId>
             <version>1.3</version>
             <scope>test</scope>
