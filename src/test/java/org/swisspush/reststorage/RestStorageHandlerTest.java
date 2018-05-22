@@ -156,7 +156,6 @@ public class RestStorageHandlerTest {
 
     @Test
     public void notifiesResourceAboutExceptionsOnRequest(TestContext testContext) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-        final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(getClass());
 
         // Force access to method because mocking Router.router(Vertx) would be much
         // harder...
@@ -178,17 +177,17 @@ public class RestStorageHandlerTest {
                     final DocumentResource resource = new DocumentResource();
                     resource.writeStream = new FailFastVertxWriteStream<Buffer>(){
                         @Override public WriteStream<Buffer> write(Buffer t) {
-                            logger.debug( "Somewhat irrelevant got written to the resource.");
+                            log.debug("Somewhat irrelevant got written to the resource.");
                             return this;
                         }
                         @Override public boolean writeQueueFull() { return false; }
                     };
                     resource.closeHandler = v -> {
-                        logger.debug( "Resource closeHandler got called." );
+                        log.debug("Resource closeHandler got called.");
                     };
                     resource.addErrorHandler( err -> {
                         synchronized (errorHandlerGotCalledPtr){
-                            logger.debug( "Resource errorHandler got called." );
+                            log.debug("Resource errorHandler got called.");
                             errorHandlerGotCalledPtr[0] = true;
                         }
                     });
@@ -207,23 +206,23 @@ public class RestStorageHandlerTest {
             headers.set( "Content-Length" , "1000" );
             final HttpServerResponse response = new FailFastVertxHttpServerResponse(){
                 @Override public HttpServerResponse setStatusCode(int statusCode) {
-                    logger.debug( "Response status code got set to {}", statusCode);
+                    log.debug( "Response status code got set to {}", statusCode);
                     return this;
                 }
                 @Override public HttpServerResponse setStatusMessage(String statusMessage) {
-                    logger.debug( "Response status message got set to '{}'.", statusMessage);
+                    log.debug( "Response status message got set to '{}'.", statusMessage);
                     return this;
                 }
             };
             final HttpServerRequest request = new FailFastVertxHttpServerRequest(){
                 @Override public HttpServerRequest pause() {
-                    logger.debug( "Request paused" );
+                    log.debug( "Request paused" );
                     return this;
                 }
                 @Override public String path() { return requestPath; }
                 @Override public MultiMap headers() { return headers; }
                 @Override public String query() { return ""; }
-                @Override public HttpServerRequest resume() { logger.debug("Request resumed."); return this; }
+                @Override public HttpServerRequest resume() { log.debug("Request resumed."); return this; }
                 @Override public HttpServerRequest handler(Handler<Buffer> handler) {
                     final Buffer tooShortBuffer = new BufferImpl();
                     tooShortBuffer.setBytes( 0 , ("This messages intent is to be shorter than specified in header.").getBytes());
