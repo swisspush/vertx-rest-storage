@@ -1,21 +1,31 @@
 package org.swisspush.reststorage;
 
+import io.vertx.core.Handler;
+import io.vertx.core.MultiMap;
 import io.vertx.core.Vertx;
+import io.vertx.core.buffer.Buffer;
+import io.vertx.core.buffer.impl.BufferImpl;
 import io.vertx.core.http.CaseInsensitiveHeaders;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.logging.Logger;
+import io.vertx.core.streams.WriteStream;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
+import io.vertx.ext.web.RoutingContext;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mockito;
+import org.swisspush.reststorage.mocks.*;
 import org.swisspush.reststorage.util.HttpRequestHeader;
+import org.swisspush.reststorage.util.LockMode;
 import org.swisspush.reststorage.util.ModuleConfiguration;
 import org.swisspush.reststorage.util.StatusCode;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.Optional;
 
 import static org.mockito.Matchers.eq;
@@ -143,4 +153,103 @@ public class RestStorageHandlerTest {
         verify(log, times(1)).info(
                 eq("Rejecting PUT request to /some/resource because current memory usage of 75% is higher than provided importance level of 50%"));
     }
+
+    @Test
+    public void notifiesResourceAboutExceptionsOnRequest(TestContext testContext) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+
+        // Force access to method because mocking Router.router(Vertx) would be much
+        // harder...
+        final Method putResourceMethod;
+        {
+            putResourceMethod = RestStorageHandler.class.getDeclaredMethod("putResource", RoutingContext.class);
+            putResourceMethod.setAccessible( true );
+        }
+
+        // Keep track of state during test
+        final boolean[] errorHandlerGotCalledPtr = new boolean[]{ false };
+
+        // Mock victim instance
+        final RestStorageHandler victim;
+        {
+            final Vertx mockedVertx = new FailFastVertx();
+            final Storage mockedStorage = new FailFastRestStorage(){
+                @Override public void put(String path, String etag, boolean merge, long expire, String lockOwner, LockMode lockMode, long lockExpire, boolean storeCompressed, Handler<Resource> handler) {
+                    final DocumentResource resource = new DocumentResource();
+                    resource.writeStream = new FailFastVertxWriteStream<Buffer>(){
+                        @Override public WriteStream<Buffer> write(Buffer t) {
+                            log.debug("Somewhat irrelevant got written to the resource.");
+                            return this;
+                        }
+                        @Override public boolean writeQueueFull() { return false; }
+                    };
+                    resource.closeHandler = v -> {
+                        log.debug("Resource closeHandler got called.");
+                    };
+                    resource.addErrorHandler( err -> {
+                        synchronized (errorHandlerGotCalledPtr){
+                            log.debug("Resource errorHandler got called.");
+                            errorHandlerGotCalledPtr[0] = true;
+                        }
+                    });
+                    handler.handle( resource );
+                }
+            };
+            final ModuleConfiguration config = new ModuleConfiguration();
+            victim = new RestStorageHandler(mockedVertx, log, mockedStorage, config);
+        }
+
+        // Mock request
+        final RoutingContext routingContext;
+        {
+            final String requestPath = "/dadadel/gugusel";
+            final MultiMap headers = new CaseInsensitiveHeaders();
+            headers.set( "Content-Length" , "1000" );
+            final HttpServerResponse response = new FailFastVertxHttpServerResponse(){
+                @Override public HttpServerResponse setStatusCode(int statusCode) {
+                    log.debug( "Response status code got set to {}", statusCode);
+                    return this;
+                }
+                @Override public HttpServerResponse setStatusMessage(String statusMessage) {
+                    log.debug( "Response status message got set to '{}'.", statusMessage);
+                    return this;
+                }
+            };
+            final HttpServerRequest request = new FailFastVertxHttpServerRequest(){
+                @Override public HttpServerRequest pause() {
+                    log.debug( "Request paused" );
+                    return this;
+                }
+                @Override public String path() { return requestPath; }
+                @Override public MultiMap headers() { return headers; }
+                @Override public String query() { return ""; }
+                @Override public HttpServerRequest resume() { log.debug("Request resumed."); return this; }
+                @Override public HttpServerRequest handler(Handler<Buffer> handler) {
+                    final Buffer tooShortBuffer = new BufferImpl();
+                    tooShortBuffer.setBytes( 0 , ("This messages intent is to be shorter than specified in header.").getBytes());
+                    handler.handle( tooShortBuffer );
+                    return this;
+                }
+                @Override public HttpServerRequest endHandler(Handler<Void> endHandler) {
+                    // Ignore this because this request MUST NEVER END!
+                    return this;
+                }
+                @Override public HttpServerRequest exceptionHandler(Handler<Throwable> handler) {
+                    handler.handle(new Exception("TODO-what-to-do-here"));
+                    return this;
+                }
+            };
+            routingContext = new FailFastVertxWebRoutingContext(){
+                @Override public HttpServerRequest request() { return request; }
+                @Override public HttpServerResponse response() { return response; }
+            };
+        }
+
+        // Trigger work
+        putResourceMethod.invoke(victim, routingContext);
+
+        synchronized (errorHandlerGotCalledPtr){
+            testContext.assertTrue(errorHandlerGotCalledPtr[0], "Victim failed to call error handler.");
+        }
+    }
+
 }

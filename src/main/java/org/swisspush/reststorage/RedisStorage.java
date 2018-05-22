@@ -857,7 +857,7 @@ public class RedisStorage implements Storage {
                         }
                     } else if (message != null && d.errorHandler != null){
                         log.error("PUT request failed with message: " + message);
-                        d.errorHandler.handle(message);
+                        d.errorHandler.handle(event.cause());
                     }
                 }
             });
