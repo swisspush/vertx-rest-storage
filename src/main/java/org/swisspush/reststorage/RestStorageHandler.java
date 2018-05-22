@@ -445,15 +445,27 @@ public class RestStorageHandler implements Handler<HttpServerRequest> {
             }
             if (resource instanceof DocumentResource) {
                 final DocumentResource documentResource = (DocumentResource) resource;
-                documentResource.errorHandler = error -> {
-                    ctx.response().setStatusCode(StatusCode.BAD_REQUEST.getStatusCode());
-                    ctx.response().setStatusMessage(StatusCode.BAD_REQUEST.getStatusMessage());
-                    ctx.response().end(error);
-                };
+                documentResource.addErrorHandler( error -> {
+                    ctx.response().setStatusCode(StatusCode.INTERNAL_SERVER_ERROR.getStatusCode());
+                    ctx.response().setStatusMessage(StatusCode.INTERNAL_SERVER_ERROR.getStatusMessage());
+                    ctx.response().end(error.getMessage());
+                });
                 documentResource.endHandler = event -> ctx.response().end();
                 final Pump pump = Pump.pump(ctx.request(), documentResource.writeStream);
                 ctx.request().endHandler(v -> documentResource.closeHandler.handle(null));
-                // TODO: exception handlers
+                ctx.request().exceptionHandler( exc -> {
+                    // Report error
+                    // TODO: Evaluate which properties to set. Public interface documentation of
+                    //       DocumentResource is de-facto non-existent. Therefore I've no idea
+                    //       which properties to set how in this case here.
+                    documentResource.error = true;
+                    documentResource.errorMessage = exc.getMessage();
+                    // Notify error handler.
+                    final Handler<Throwable> resourceErrorHandler = documentResource.errorHandler;
+                    if( resourceErrorHandler != null ){
+                        resourceErrorHandler.handle( exc );
+                    }
+                });
                 pump.start();
             }
         });
