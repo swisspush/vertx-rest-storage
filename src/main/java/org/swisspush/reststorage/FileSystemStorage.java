@@ -3,10 +3,7 @@ package org.swisspush.reststorage;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
-import io.vertx.core.file.AsyncFile;
-import io.vertx.core.file.FileProps;
-import io.vertx.core.file.FileSystem;
-import io.vertx.core.file.OpenOptions;
+import io.vertx.core.file.*;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import org.swisspush.reststorage.util.LockMode;
@@ -14,18 +11,31 @@ import org.swisspush.reststorage.util.LockMode;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.DirectoryNotEmptyException;
+import java.nio.file.NoSuchFileException;
 import java.util.*;
 
 public class FileSystemStorage implements Storage {
 
     private String root;
     private Vertx vertx;
+    private final int rootLen;
 
     private Logger log = LoggerFactory.getLogger(FileSystemStorage.class);
 
     public FileSystemStorage(Vertx vertx, String root) {
         this.vertx = vertx;
         this.root = root;
+        { // Cache string length of root without trailing slashes
+            final String rootAbs;
+            try {
+                rootAbs = new File(root).getCanonicalPath();
+            } catch (IOException e) {
+                throw new IllegalArgumentException("Failed to canonicalize root: '"+root+"'.", e);
+            }
+            int rootLen;
+            for( rootLen=rootAbs.length()-1 ; rootAbs.charAt(rootLen) == File.separatorChar ; --rootLen );
+            this.rootLen = rootLen;
+        }
     }
 
     @Override
@@ -215,6 +225,8 @@ public class FileSystemStorage implements Storage {
                         } else {
                             resource.exists = false;
                         }
+                    }else{
+                        deleteEmptyParentDirs(new File(path).getParent());
                     }
                     handler.handle(resource);
                 });
@@ -222,6 +234,57 @@ public class FileSystemStorage implements Storage {
                 Resource r = new Resource();
                 r.exists = false;
                 handler.handle(r);
+            }
+        });
+    }
+
+    /**
+     * Deletes all empty parent directories starting at specified directory.
+     *
+     * @param path
+     *      Most deep (virtual) directory to start bubbling up deletion of empty
+     *      directories.
+     */
+    private void deleteEmptyParentDirs(String path) {
+        final FileSystem fileSystem = fileSystem();
+        final String pathAbs = canonicalize(path);
+
+        // Analyze if we reached root.
+        int pathLen;
+        // Evaluate length of current path excluding trailing slashes by searching
+        // last non-slash (backslash of course on windows).
+        for( pathLen=pathAbs.length()-1 ; pathAbs.charAt(pathLen) == File.separatorChar ; --pathLen );
+        if( rootLen == pathLen ){
+            // We do NOT want to delete our virtual root even it is empty :)
+            log.debug( "Stop deletion here to keep virtual root '{}'.", root );
+            return;
+        }
+
+        log.debug( "Delete directory if empty '{}'.", pathAbs);
+        fileSystem.delete( pathAbs , result -> {
+            if( result.succeeded() ){
+                // Bubbling up to parent.
+                final String parentPath = new File(path).getParent();
+                // HINT 1: We go recursive here!
+                // HINT 2: When debugging stack traces keep in mind this recursion occurs
+                //         asynchronous and therefore is not really a recursion :)
+                deleteEmptyParentDirs( parentPath );
+            }else{
+                final Throwable cause = result.cause();
+                if(cause instanceof FileSystemException && cause.getCause() instanceof DirectoryNotEmptyException){
+                    // Failed to delete directory because it's not empty. Therefore we must not
+                    // delete it at all and we're done now.
+                    log.debug( "Directory '"+pathAbs+"' not empty. Stop bubbling deleting dirs." );
+                }else if(cause instanceof FileSystemException && cause.getCause() instanceof NoSuchFileException){
+                    // Somehow a caller requested to delete a directory which seems not to exist.
+                    // This should never be the case theoretically. (except maybe some race
+                    // conditions?)
+                    log.warn( "Ignored to delete non-existing dir '{}'.", pathAbs );
+                }else{
+                    // This case should not happen. At least up to now i've no idea of a valid
+                    // scenario for this one.
+                    log.error("Unexpected error while deleting empty directories." , cause);
+                }
             }
         });
     }
