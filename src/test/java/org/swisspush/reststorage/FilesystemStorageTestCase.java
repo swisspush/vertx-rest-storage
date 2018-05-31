@@ -28,6 +28,7 @@ public abstract class FilesystemStorageTestCase extends ConfigurableTestCase {
         RestAssured.defaultParser = Parser.JSON;
 
         ModuleConfiguration modConfig = new ModuleConfiguration()
+                .root( "./target/fileStorage" )
                 .storageType(ModuleConfiguration.StorageType.filesystem)
                 .confirmCollectionDelete(true)
                 .storageAddress("rest-storage");
@@ -42,8 +43,9 @@ public abstract class FilesystemStorageTestCase extends ConfigurableTestCase {
     @After
     public void deleteTestFiles(TestContext context){
         final FileSystem fileSystem = vertx.fileSystem();
-        if( fileSystem.existsBlocking(TEST_FILES_PATH) ){
-            fileSystem.deleteRecursiveBlocking(TEST_FILES_PATH, true);
+        final String relPath = "./target/fileStorage/"+TEST_FILES_PATH;
+        if( fileSystem.existsBlocking(relPath) ){
+            fileSystem.deleteRecursiveBlocking(relPath, true);
         }
     }
 }
