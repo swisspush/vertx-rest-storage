@@ -19,6 +19,9 @@ import org.swisspush.reststorage.mocks.SuccessfulAsyncResult;
 import org.swisspush.reststorage.util.LockMode;
 
 import java.io.File;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static org.mockito.Mockito.mock;
@@ -53,7 +56,7 @@ public class FilesystemStorageTest {
         final String path;
         FileSystemStorage victim;
         {
-            final String root = new File( "target/fileStorage-"+ UUID.randomUUID().toString() ).getAbsolutePath().replaceAll("\\\\","/"); // <-- Fix windows
+            final String root = createPseudoFileStorageRoot();
             final String base = "/path/to/my/fancy";
             path = base + "/file";
             final FileSystem fileSystem = new FailFastVertxFileSystem(){
@@ -155,4 +158,91 @@ public class FilesystemStorageTest {
         }
     }
 
+    @Test
+    public void cleanupEmptyParentDirsOnResourceDeletion(final TestContext testContext) {
+
+        // Keep track of test state
+        final boolean[] deleteHandlerGotCalled = new boolean[]{ false };
+        final boolean[] leafFileDeleted = new boolean[]{ false };
+        final boolean[] dir_to_deleted = new boolean[]{ false };
+        final boolean[] dir_file_deleted = new boolean[]{ false };
+        final boolean[] dir_pseudo_deleted = new boolean[]{ false };
+        final boolean[] dir_my_deleted = new boolean[]{ false };
+
+        // Setup victim
+        final FileSystemStorage victim;
+        {
+            // Mock vertx filesystem
+            final FileSystem fileSystem = new FailFastVertxFileSystem(){
+                @Override public FileSystem exists(String path, Handler<AsyncResult<Boolean>> handler) {
+                    path = path.replaceAll("\\\\", "/"); // Fix windows
+                    if( path.endsWith("/my/pseudo/file/to/delete") ){
+                        handler.handle(new SuccessfulAsyncResult<>(true));
+                    }else{
+                        throw new UnsupportedOperationException(msg);
+                    }
+                    return this;
+                }
+                @Override public FileSystem deleteRecursive(String path, boolean b, Handler<AsyncResult<Void>> handler) {
+                    path = path.replaceAll("\\\\","/"); // Fix windows.
+                    if( path.endsWith("/my/pseudo/file/to/delete") ){
+                        leafFileDeleted[0] = true;
+                    }else{
+                        testContext.fail( "Got unexpected path '"+path+"'." );
+                    }
+                    handler.handle(new SuccessfulAsyncResult<>(null));
+                    return this;
+                }
+                @Override public FileSystem delete(String path, Handler<AsyncResult<Void>> handler) {
+                    path = path.replaceAll("\\\\","/"); // Fix windows.
+                    if( path.endsWith("/my/pseudo/file/to") ) {
+                        dir_to_deleted[0] = true;
+                    }else if( path.endsWith("/my/pseudo/file") ){
+                        dir_file_deleted[0] = true;
+                    }else if( path.endsWith("/my/pseudo") ){
+                        dir_pseudo_deleted[0] = true;
+                    }else if( path.endsWith("/my") ){
+                        dir_my_deleted[0] = true;
+                    }else{
+                        testContext.fail( "Got unexpected path '"+path+"'." );
+                    }
+                    handler.handle(new SuccessfulAsyncResult<>(null));
+                    return this;
+                }
+            };
+            // Mock vertx
+            final Vertx mockedVertx = new FailFastVertx(){
+                @Override public FileSystem fileSystem() {
+                    return fileSystem;
+                }
+            };
+            // Use pseudo root (could be anything because our test will never access real filesystem).
+            final String root = createPseudoFileStorageRoot();
+            // Wire up victim instance.
+            victim = new FileSystemStorage(mockedVertx, root);
+        }
+
+        // Challenge victim
+        victim.delete( "/my/pseudo/file/to/delete", null, null, 0, false, false, resource -> {
+            deleteHandlerGotCalled[0] = true;
+        });
+
+        // Assert
+        testContext.assertTrue( deleteHandlerGotCalled[0] , "Victim failed to call handler after deletion.");
+        testContext.assertTrue( leafFileDeleted[0] , "Victim failed to delete resource itself." );
+        testContext.assertTrue( dir_to_deleted[0] , "Victim failed to delete one of the directories.");
+        testContext.assertTrue( dir_file_deleted[0] , "Victim failed to delete one of the directories.");
+        testContext.assertTrue( dir_pseudo_deleted[0] , "Victim failed to delete one of the directories.");
+        testContext.assertTrue( dir_my_deleted[0] , "Victim failed to delete one of the directories.");
+    }
+
+    /**
+     * @return
+     *      A path denoting a directory inside 'target/' directory for usage as a
+     *      temporary fileStorage. This returns only a path. It does not create or
+     *      check if such a directory exists or someone has access to it.
+     */
+    private static String createPseudoFileStorageRoot() {
+        return new File( "target/fileStorage-"+ UUID.randomUUID().toString() ).getAbsolutePath().replaceAll("\\\\","/"); // <-- Fix windows
+    }
 }
