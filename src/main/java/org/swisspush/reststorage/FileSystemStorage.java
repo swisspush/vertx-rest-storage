@@ -1,6 +1,5 @@
 package org.swisspush.reststorage;
 
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.file.*;
@@ -16,7 +15,7 @@ import java.util.*;
 
 public class FileSystemStorage implements Storage {
 
-    private String root;
+    private final String root;
     private Vertx vertx;
     private final int rootLen;
 
@@ -24,18 +23,23 @@ public class FileSystemStorage implements Storage {
 
     public FileSystemStorage(Vertx vertx, String root) {
         this.vertx = vertx;
-        this.root = root;
-        { // Cache string length of root without trailing slashes
-            final String rootAbs;
-            try {
-                rootAbs = new File(root).getCanonicalPath();
-            } catch (IOException e) {
-                throw new IllegalArgumentException("Failed to canonicalize root: '"+root+"'.", e);
-            }
-            int rootLen;
-            for( rootLen=rootAbs.length()-1 ; rootAbs.charAt(rootLen) == File.separatorChar ; --rootLen );
-            this.rootLen = rootLen;
+        // Unify format for simpler work.
+        String tmpRoot;
+        try {
+            tmpRoot = new File(root).getCanonicalPath();
+        } catch (IOException e) {
+            throw new IllegalArgumentException("Failed to canonicalize root: '"+root+"'.", e);
         }
+        // Fix ugly operating systems.
+        if( File.separatorChar == '\\' ){
+            tmpRoot = tmpRoot.replaceAll("\\\\","/");
+        }
+        this.root = tmpRoot;
+
+        // Cache string length of root without trailing slashes
+        int rootLen;
+        for( rootLen=tmpRoot.length()-1 ; tmpRoot.charAt(rootLen) == File.separatorChar ; --rootLen );
+        this.rootLen = rootLen;
     }
 
     @Override
@@ -74,6 +78,9 @@ public class FileSystemStorage implements Storage {
                                     r.name = item.substring(dirLength + 1);
                                     c.items.add(r);
                                     if (c.items.size() == length) {
+                                        // Remove hidden '/.tmp/' directory.
+                                        c.items.removeIf( node -> ".tmp".equals(node.name) && dirLength==root.length() );
+                                        //
                                         Collections.sort(c.items);
                                         int n = count;
                                         if(n == -1) {
@@ -156,33 +163,48 @@ public class FileSystemStorage implements Storage {
     }
 
     private void putFile(final Handler<Resource> handler, final String fullPath) {
-        final String tmpFilePathAbs = fullPath + "." + UUID.randomUUID().toString();
-        final String tmpFilePath = tmpFilePathAbs.substring(root.length());
+        final String tmpFilePath = "/.tmp/uploads/"+ new File(fullPath).getName() + "-" + UUID.randomUUID().toString() +".part";
+        final String tmpFilePathAbs = canonicalize(tmpFilePath);
+        final String tmpFileParentPath = new File(tmpFilePathAbs).getParent();
         final FileSystem fileSystem = fileSystem();
         new Runnable(){
             @Override public void run() {
-                fileSystem.open(tmpFilePathAbs, new OpenOptions(), this::onTmpFileOpen );
+                fileSystem.mkdirs(tmpFileParentPath, result -> {
+                    if( result.succeeded() ){
+                        openTmpFile();
+                    }else{
+                        log.warn("Failed to create directory '"+tmpFileParentPath+"'.");
+                        resolveWithErroneousResource();
+                    }
+                });
             }
-            private void onTmpFileOpen( AsyncResult<AsyncFile> tmpFileOpenEvent ) {
-                if (tmpFileOpenEvent.succeeded()) {
-                    final AsyncFile tmpFile = tmpFileOpenEvent.result();
-                    final DocumentResource d = new DocumentResource();
-                    d.writeStream = tmpFile;
-                    d.closeHandler = v -> {
-                        tmpFile.close( ev -> {
-                            onResourceClose(d);
-                        });
-                    };
-                    d.addErrorHandler( err -> onResourceError(err,tmpFile) );
-                    handler.handle(d);
-                } else {
-                    Resource r = new Resource();
-                    r.exists = false;
-                    handler.handle(r);
-                }
+            private void openTmpFile() {
+                fileSystem.open(tmpFilePathAbs, new OpenOptions(), result -> {
+                    if( result.succeeded() ){
+                        resolveWithTmpFileResource( result.result() );
+                    }else{
+                        log.warn( "Failed to open tmp file '{}'.", tmpFilePathAbs, result.cause() );
+                        resolveWithErroneousResource();
+                    }
+                });
             }
-            private void onResourceClose( DocumentResource d ) {
-                // Delete obsolete file which was there before.
+            private void resolveWithTmpFileResource(final AsyncFile tmpFile) {
+                final DocumentResource d = new DocumentResource();
+                d.writeStream = tmpFile;
+                d.closeHandler = v -> {
+                    tmpFile.close( ev -> {
+                        moveTmpFileToFinalDestination(d);
+                    });
+                };
+                d.addErrorHandler( err -> {
+                    log.error( "Put file failed:" , err );
+                    cleanupFile(tmpFile);
+                });
+                // Resolve with ready-to-use resource.
+                handler.handle(d);
+            }
+            private void moveTmpFileToFinalDestination(DocumentResource d ) {
+                // Delete obsolete file which was there before (is this really required??).
                 fileSystem.delete(fullPath, event3 -> {
                     // Move/rename our temporary file to its final destination.
                     fileSystem.move(tmpFilePathAbs, fullPath, event4 -> {
@@ -191,14 +213,25 @@ public class FileSystemStorage implements Storage {
                     });
                 });
             }
-            private void onResourceError( Throwable exc , AsyncFile tmpFile ) {
-                log.error( "Put file failed:" , exc );
-                tmpFile.close( voidCloseEvent -> {
-                    log.debug( "Tmp file '{}' closed." , tmpFilePathAbs);
-                    delete(tmpFilePath, null, null, 0, false, true, voidDeleteEvent -> {
+            /////////////////////////////////////////////////
+            // Special and error cases.
+            /////////////////////////////////////////////////
+            private void cleanupFile(AsyncFile tmpFile ) {
+                tmpFile.close( closeResult -> {
+                    if( closeResult.succeeded() ){
+                        log.debug( "Tmp file '{}' closed." , tmpFilePathAbs);
+                    }else{
+                        log.warn( "Failed to close tmp file '{}'.", tmpFile, closeResult.cause() );
+                    }
+                    delete(tmpFilePath, null, null, 0, false, true, uselessResource -> {
                         log.debug("Tmp file '{}' deleted.", tmpFilePathAbs);
                     });
                 });
+            }
+            private void resolveWithErroneousResource() {
+                final Resource r = new Resource();
+                r.exists = false;
+                handler.handle(r);
             }
         }.run();
     }

@@ -47,6 +47,7 @@ public class FilesystemStorageTest {
 
         // Keep track of state during test
         final boolean[] handlerCalledPtr = new boolean[]{ false };
+        final boolean[] tmpFileOpened = new boolean[]{ false };
         final Resource[] resourcePtr = new Resource[]{ null };
         final boolean[] errorTriggeredPtr = new boolean[]{ false };
         final boolean[] fileGotClosed = new boolean[]{ false };
@@ -61,16 +62,15 @@ public class FilesystemStorageTest {
             path = base + "/file";
             final FileSystem fileSystem = new FailFastVertxFileSystem(){
                 @Override public FileSystem exists(String s, Handler<AsyncResult<Boolean>> handler) {
-                    s = s.replaceAll("\\\\","/"); // <-- Fix windows again
+                    s = s.replaceAll("\\\\","/"); // <-- Fix ugly operating systems.
                     if( (root+path).equals(s) ) {
                         // Report that file to store doesn't exists already.
                         handler.handle(new SuccessfulAsyncResult<>(false));
                     }else if( (root+base).equals(s) ){
                         // Report that directory already exists.
                         handler.handle(new SuccessfulAsyncResult<>(true));
-                    }else if( s.length()>(root+base).length() && s.startsWith(root+base) ){
-                        // Confirm that tmp file exists
-                        handler.handle(new SuccessfulAsyncResult<>(true));
+                    }else if( s.matches(".*/\\.tmp/uploads/file.*\\.part") ){
+                        handler.handle(new SuccessfulAsyncResult<>(tmpFileOpened[0]));
                     }else{
                         throw new UnsupportedOperationException( msg );
                     }
@@ -78,6 +78,7 @@ public class FilesystemStorageTest {
                 }
                 @Override public FileSystem open(String s, OpenOptions openOptions, Handler<AsyncResult<AsyncFile>> handler) {
                     logger.debug( "Open file '{}'", s );
+                    tmpFileOpened[0] = true;
                     final AsyncFile file = new FailFastVertxAsyncFile(){
                         @Override public void close(Handler<AsyncResult<Void>> handler) {
                             logger.debug("Closing file '{}'", s);
@@ -100,6 +101,10 @@ public class FilesystemStorageTest {
                         logger.debug( "Delete recursive '{}'.", s);
                         fileGotDeleted[0] = true;
                     }
+                    handler.handle(new SuccessfulAsyncResult<>(null));
+                    return this;
+                }
+                @Override public FileSystem mkdirs(String s, Handler<AsyncResult<Void>> handler) {
                     handler.handle(new SuccessfulAsyncResult<>(null));
                     return this;
                 }
