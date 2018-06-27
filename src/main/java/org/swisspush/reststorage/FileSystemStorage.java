@@ -2,7 +2,10 @@ package org.swisspush.reststorage;
 
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
-import io.vertx.core.file.*;
+import io.vertx.core.file.FileProps;
+import io.vertx.core.file.FileSystem;
+import io.vertx.core.file.FileSystemException;
+import io.vertx.core.file.OpenOptions;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import org.swisspush.reststorage.util.LockMode;
@@ -11,9 +14,13 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.NoSuchFileException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 
-public class FileSystemStorage implements Storage {
+
+public class FileSystemStorage implements Storage,FilePutter.FilePutterCallbacks {
 
     private final String root;
     private Vertx vertx;
@@ -163,77 +170,10 @@ public class FileSystemStorage implements Storage {
     }
 
     private void putFile(final Handler<Resource> handler, final String fullPath) {
-        final String tmpFilePath = "/.tmp/uploads/"+ new File(fullPath).getName() + "-" + UUID.randomUUID().toString() +".part";
-        final String tmpFilePathAbs = canonicalize(tmpFilePath);
-        final String tmpFileParentPath = new File(tmpFilePathAbs).getParent();
-        final FileSystem fileSystem = fileSystem();
-        new Runnable(){
-            @Override public void run() {
-                fileSystem.mkdirs(tmpFileParentPath, result -> {
-                    if( result.succeeded() ){
-                        openTmpFile();
-                    }else{
-                        log.warn("Failed to create directory '"+tmpFileParentPath+"'.");
-                        resolveWithErroneousResource();
-                    }
-                });
-            }
-            private void openTmpFile() {
-                fileSystem.open(tmpFilePathAbs, new OpenOptions(), result -> {
-                    if( result.succeeded() ){
-                        resolveWithTmpFileResource( result.result() );
-                    }else{
-                        log.warn( "Failed to open tmp file '{}'.", tmpFilePathAbs, result.cause() );
-                        resolveWithErroneousResource();
-                    }
-                });
-            }
-            private void resolveWithTmpFileResource(final AsyncFile tmpFile) {
-                final DocumentResource d = new DocumentResource();
-                d.writeStream = tmpFile;
-                d.closeHandler = v -> {
-                    tmpFile.close( ev -> {
-                        moveTmpFileToFinalDestination(d);
-                    });
-                };
-                d.addErrorHandler( err -> {
-                    log.error( "Put file failed:" , err );
-                    cleanupFile(tmpFile);
-                });
-                // Resolve with ready-to-use resource.
-                handler.handle(d);
-            }
-            private void moveTmpFileToFinalDestination(DocumentResource d ) {
-                // Delete obsolete file which was there before (is this really required??).
-                fileSystem.delete(fullPath, event3 -> {
-                    // Move/rename our temporary file to its final destination.
-                    fileSystem.move(tmpFilePathAbs, fullPath, event4 -> {
-                        log.debug( "File stored successfully: {}", fullPath );
-                        d.endHandler.handle(null);
-                    });
-                });
-            }
-            /////////////////////////////////////////////////
-            // Special and error cases.
-            /////////////////////////////////////////////////
-            private void cleanupFile(AsyncFile tmpFile ) {
-                tmpFile.close( closeResult -> {
-                    if( closeResult.succeeded() ){
-                        log.debug( "Tmp file '{}' closed." , tmpFilePathAbs);
-                    }else{
-                        log.warn( "Failed to close tmp file '{}'.", tmpFile, closeResult.cause() );
-                    }
-                    delete(tmpFilePath, null, null, 0, false, true, uselessResource -> {
-                        log.debug("Tmp file '{}' deleted.", tmpFilePathAbs);
-                    });
-                });
-            }
-            private void resolveWithErroneousResource() {
-                final Resource r = new Resource();
-                r.exists = false;
-                handler.handle(r);
-            }
-        }.run();
+        // Delegate work to a dedicated file putter.
+        final FilePutter filePutter;
+        filePutter = new FilePutter(fileSystem(), fullPath, this, handler);
+        filePutter.execute();
     }
 
     @Override
@@ -322,7 +262,7 @@ public class FileSystemStorage implements Storage {
         });
     }
 
-    private String canonicalize(String path) {
+    public String canonicalize(String path) {
         try {
             return new File(root + path).getCanonicalPath();
         } catch (IOException e) {
