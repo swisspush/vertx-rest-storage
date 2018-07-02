@@ -1,6 +1,7 @@
 package org.swisspush.reststorage;
 
 import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
 import io.vertx.core.file.AsyncFile;
 import io.vertx.core.file.CopyOptions;
 import io.vertx.core.file.FileSystem;
@@ -10,6 +11,7 @@ import io.vertx.core.logging.LoggerFactory;
 import org.swisspush.reststorage.util.LockMode;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.UUID;
 
 
@@ -19,16 +21,22 @@ import java.util.UUID;
 public class FilePutter {
 
     public static interface FilePutterCallbacks {
-        /** Same as {@link FileSystemStorage#delete(String, String, LockMode, long, boolean, boolean, Handler)}. */
+        /**
+         * Same as {@link FileSystemStorage#delete(String, String, LockMode, long, boolean, boolean, Handler)}.
+         */
         void delete(String path, String lockOwner, LockMode lockMode, long lockExpire, boolean confirmCollectionDelete, boolean deleteRecursive, final Handler<Resource> handler);
-        /** Same as {@link FileSystemStorage#canonicalize(String)}. */
+
+        /**
+         * Same as {@link FileSystemStorage#canonicalize(String)}.
+         */
         String canonicalize(String path);
     }
 
-    private static final int MOVE_TO_FINAL_DESTINATION_ATTEMPT_LIMIT = 256;
+    private static final int MOVE_RETRY_TIMEOUT_MILLIS = 5_000;
+    private static final int MOVE_RETRY_DELAY_MILLIS = 50;
     private static final Logger log = LoggerFactory.getLogger(FilePutter.class);
     private final CopyOptions moveOptions = new CopyOptions().setReplaceExisting(true);
-    private final FileSystem fileSystem;
+    private final Vertx vertx;
     private final String fullPath;
     private final FilePutterCallbacks callbacks;
     private final Handler<Resource> onCompleteHandler;
@@ -36,14 +44,16 @@ public class FilePutter {
     private String tmpFilePathAbs;
     private String tmpFileParentPath;
     private volatile boolean executed = false;
+    private long moveTimerHandle = 0;
+    private boolean moveOperationTimedOut = false;
     private int moveToFinalDestinationAttemptCount = 0;
 
     /**
      * Package-private because currently only used internally.
      */
-    FilePutter(FileSystem fileSystem, String fullPath, FilePutterCallbacks callbacks, Handler<Resource> onCompleteHandler) {
-        this.fileSystem = fileSystem;
-        this.fullPath = fullPath;
+    FilePutter(Vertx vertx, String fullPath, FilePutterCallbacks callbacks, Handler<Resource> onCompleteHandler) {
+        this.vertx = vertx;
+        this.fullPath = canonicalizeAbsolutePath(fullPath);
         this.callbacks = callbacks;
         this.onCompleteHandler = onCompleteHandler;
     }
@@ -52,13 +62,13 @@ public class FilePutter {
      * <p>Triggers the configured task. This method should only get called once per
      * instance!</p>
      *
-     * @throws IllegalStateException
-     *      Eg. in case method gets called more than one time.
+     * @throws IllegalStateException Eg. in case method gets called more than one time.
      */
     public synchronized void execute() {
-        if( executed ){
-            throw new IllegalStateException( "This putter already got executed." );
+        if (executed) {
+            throw new IllegalStateException("This putter already got executed.");
         }
+        final FileSystem fileSystem = vertx.fileSystem();
         this.executed = true;
         // Setup required context.
         this.tmpFilePath = "/.tmp/uploads/" + new File(fullPath).getName() + "-" + UUID.randomUUID().toString() + ".part";
@@ -76,6 +86,7 @@ public class FilePutter {
     }
 
     private void openTmpFile() {
+        final FileSystem fileSystem = vertx.fileSystem();
         fileSystem.open(tmpFilePathAbs, new OpenOptions(), result -> {
             if (result.succeeded()) {
                 resolveWithTmpFileResource(result.result());
@@ -103,14 +114,22 @@ public class FilePutter {
     }
 
     private void moveTmpFileToFinalDestination(DocumentResource d) {
-        moveToFinalDestinationAttemptCount += 1;
+        final FileSystem fileSystem = vertx.fileSystem();
+        if (moveTimerHandle == 0) {
+            // Start a timer observing if we time out with our retries.
+            moveTimerHandle = vertx.setTimer(MOVE_RETRY_TIMEOUT_MILLIS, aLong -> {
+                moveOperationTimedOut = true;
+            });
+        }
         // Move/rename our temporary file to its final destination.
+        moveToFinalDestinationAttemptCount += 1;
         fileSystem.move(tmpFilePathAbs, fullPath, moveOptions, moveResult -> {
             if (moveResult.succeeded()) {
                 log.debug("File stored successfully: {}", fullPath);
                 d.endHandler.handle(null);
-            } else if (moveToFinalDestinationAttemptCount < MOVE_TO_FINAL_DESTINATION_ATTEMPT_LIMIT) {
-                mkdirsAndTriggerMove(d);
+            } else if (!moveOperationTimedOut) {
+                // Retry after some delay.
+                vertx.setTimer(MOVE_RETRY_DELAY_MILLIS, aLong -> mkdirsAndTriggerMove(d));
             } else {
                 log.error("Failed to move tmp file '{}' to its final destination '{}' even after trying {} times.", tmpFilePathAbs, fullPath, moveToFinalDestinationAttemptCount);
                 d.errorHandler.handle(moveResult.cause());
@@ -119,6 +138,7 @@ public class FilePutter {
     }
 
     private void mkdirsAndTriggerMove(DocumentResource d) {
+        final FileSystem fileSystem = vertx.fileSystem();
         // Creating (possibly missing) parent dirs and try again.
         fileSystem.mkdirs(dirName(fullPath), mkdirResult -> {
             if (mkdirResult.succeeded()) {
@@ -126,7 +146,12 @@ public class FilePutter {
                 moveTmpFileToFinalDestination(d);
             } else {
                 log.error("Failed to create parent dirs of '{}'.", fullPath);
-                d.errorHandler.handle(mkdirResult.cause());
+                fileSystem.delete(tmpFilePath, deleteResult -> {
+                    if (deleteResult.failed()) {
+                        log.warn("Failed to delete tmp file '{}'.", tmpFilePath);
+                    }
+                    d.errorHandler.handle(mkdirResult.cause());
+                });
             }
         });
     }
@@ -134,14 +159,14 @@ public class FilePutter {
     private void cleanupFile(AsyncFile file) {
         file.close(closeResult -> {
             if (closeResult.succeeded()) {
-                log.debug("Tmp file '{}' closed.", tmpFilePathAbs);
+                log.debug("File '{}' closed.", tmpFilePathAbs);
             } else {
-                log.warn("Failed to close tmp file '{}'.", file, closeResult.cause());
+                log.warn("Failed to close file '{}'.", file, closeResult.cause());
             }
             callbacks.delete(tmpFilePath, null, null, 0, false, true, resource -> {
-                if( resource.error ){
+                if (resource.error) {
                     log.warn("Failed to delete file '{}': {}", tmpFilePathAbs, resource.errorMessage);
-                }else{
+                } else {
                     log.debug("File '{}' deleted.", tmpFilePathAbs);
                 }
             });
@@ -159,4 +184,11 @@ public class FilePutter {
         return new File(path).getParent();
     }
 
+    private String canonicalizeAbsolutePath(String absolutePath) {
+        try {
+            return new File(absolutePath).getCanonicalPath();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }
