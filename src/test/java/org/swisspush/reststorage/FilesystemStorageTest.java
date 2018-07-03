@@ -1,6 +1,7 @@
 package org.swisspush.reststorage;
 
 import io.vertx.core.AsyncResult;
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.impl.BufferImpl;
@@ -64,12 +65,12 @@ public class FilesystemStorageTest {
                     s = s.replaceAll("\\\\","/"); // <-- Fix ugly operating systems.
                     if( (root+path).equals(s) ) {
                         // Report that file to store doesn't exists already.
-                        handler.handle(new SuccessfulAsyncResult<>(false));
+                        handler.handle(Future.succeededFuture(false));
                     }else if( (root+base).equals(s) ){
                         // Report that directory already exists.
-                        handler.handle(new SuccessfulAsyncResult<>(true));
+                        handler.handle(Future.succeededFuture(true));
                     }else if( s.matches(".*/\\.tmp/uploads/file.*\\.part") ){
-                        handler.handle(new SuccessfulAsyncResult<>(tmpFileOpened[0]));
+                        handler.handle(Future.succeededFuture(tmpFileOpened[0]));
                     }else{
                         throw new UnsupportedOperationException( msg );
                     }
@@ -87,24 +88,25 @@ public class FilesystemStorageTest {
                             synchronized (fileGotClosed){
                                 fileGotClosed[0] = true;
                             }
-                            handler.handle(new SuccessfulAsyncResult<>(null));
+                            handler.handle(Future.succeededFuture());
                         }
                     };
-                    handler.handle(new SuccessfulAsyncResult<>(file));
+                    handler.handle(Future.succeededFuture(file));
                     return this;
                 }
-                @Override public FileSystem deleteRecursive(String s, boolean b, Handler<AsyncResult<Void>> handler) {
+                @Override
+                public FileSystem delete(String s, Handler<AsyncResult<Void>> handler) {
                     // This check may not suffice because it succeeds no matter which file gets
                     // deleted.
                     synchronized (fileGotDeleted){
                         logger.debug( "Delete recursive '{}'.", s);
                         fileGotDeleted[0] = true;
                     }
-                    handler.handle(new SuccessfulAsyncResult<>(null));
+                    if (handler != null) handler.handle(Future.succeededFuture());
                     return this;
                 }
                 @Override public FileSystem mkdirs(String s, Handler<AsyncResult<Void>> handler) {
-                    handler.handle(new SuccessfulAsyncResult<>(null));
+                    handler.handle(Future.succeededFuture(null));
                     return this;
                 }
             };
@@ -181,7 +183,7 @@ public class FilesystemStorageTest {
                 @Override public FileSystem exists(String path, Handler<AsyncResult<Boolean>> handler) {
                     path = path.replaceAll("\\\\", "/"); // Fix windows
                     if( path.endsWith("/my/pseudo/file/to/delete") ){
-                        handler.handle(new SuccessfulAsyncResult<>(true));
+                        handler.handle(Future.succeededFuture(true));
                     }else{
                         throw new UnsupportedOperationException(msg);
                     }
@@ -194,7 +196,7 @@ public class FilesystemStorageTest {
                     }else{
                         testContext.fail( "Got unexpected path '"+path+"'." );
                     }
-                    handler.handle(new SuccessfulAsyncResult<>(null));
+                    handler.handle(Future.succeededFuture(null));
                     return this;
                 }
                 @Override public FileSystem delete(String path, Handler<AsyncResult<Void>> handler) {
@@ -210,7 +212,7 @@ public class FilesystemStorageTest {
                     }else{
                         testContext.fail( "Got unexpected path '"+path+"'." );
                     }
-                    handler.handle(new SuccessfulAsyncResult<>(null));
+                    handler.handle(Future.succeededFuture(null));
                     return this;
                 }
             };
@@ -304,6 +306,10 @@ public class FilesystemStorageTest {
             documentResource.endHandler = aVoid -> {
                 victimIsDoneWithItsWork[0] = true;
             };
+            documentResource.addErrorHandler(thr -> {
+                logger.trace( "Victim reported a problem:", new Exception("Mocked error handler received a throwable.",thr) );
+                victimIsDoneWithItsWork[0] = true;
+            });
             documentResource.writeStream.write(new BufferImpl().appendString("My test files content."));
             // Trigger close handler to signalize we're done. Victim now has to finalize
             // upload.

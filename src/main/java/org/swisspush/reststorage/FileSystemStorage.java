@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Optional;
 
 
-public class FileSystemStorage implements Storage, FilePutter.FilePutterCallbacks {
+public class FileSystemStorage implements Storage {
 
     private final String root;
     private Vertx vertx;
@@ -172,7 +172,7 @@ public class FileSystemStorage implements Storage, FilePutter.FilePutterCallback
     private void putFile(final Handler<Resource> handler, final String fullPath) {
         // Delegate work to a dedicated file putter.
         final FilePutter filePutter;
-        filePutter = new FilePutter(vertx, fullPath, this, handler);
+        filePutter = new FilePutter(vertx, root, fullPath, handler);
         filePutter.execute();
     }
 
