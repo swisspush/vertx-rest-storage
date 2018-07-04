@@ -1,26 +1,26 @@
 package org.swisspush.reststorage;
 
 import io.vertx.core.AsyncResult;
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
+import io.vertx.core.buffer.impl.BufferImpl;
 import io.vertx.core.file.AsyncFile;
+import io.vertx.core.file.CopyOptions;
 import io.vertx.core.file.FileSystem;
 import io.vertx.core.file.OpenOptions;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
+import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.swisspush.reststorage.mocks.FailFastVertx;
-import org.swisspush.reststorage.mocks.FailFastVertxAsyncFile;
-import org.swisspush.reststorage.mocks.FailFastVertxFileSystem;
-import org.swisspush.reststorage.mocks.SuccessfulAsyncResult;
+import org.swisspush.reststorage.mocks.*;
 import org.swisspush.reststorage.util.LockMode;
 
 import java.io.File;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -65,12 +65,12 @@ public class FilesystemStorageTest {
                     s = s.replaceAll("\\\\","/"); // <-- Fix ugly operating systems.
                     if( (root+path).equals(s) ) {
                         // Report that file to store doesn't exists already.
-                        handler.handle(new SuccessfulAsyncResult<>(false));
+                        handler.handle(Future.succeededFuture(false));
                     }else if( (root+base).equals(s) ){
                         // Report that directory already exists.
-                        handler.handle(new SuccessfulAsyncResult<>(true));
+                        handler.handle(Future.succeededFuture(true));
                     }else if( s.matches(".*/\\.tmp/uploads/file.*\\.part") ){
-                        handler.handle(new SuccessfulAsyncResult<>(tmpFileOpened[0]));
+                        handler.handle(Future.succeededFuture(tmpFileOpened[0]));
                     }else{
                         throw new UnsupportedOperationException( msg );
                     }
@@ -88,24 +88,25 @@ public class FilesystemStorageTest {
                             synchronized (fileGotClosed){
                                 fileGotClosed[0] = true;
                             }
-                            handler.handle(new SuccessfulAsyncResult<>(null));
+                            handler.handle(Future.succeededFuture());
                         }
                     };
-                    handler.handle(new SuccessfulAsyncResult<>(file));
+                    handler.handle(Future.succeededFuture(file));
                     return this;
                 }
-                @Override public FileSystem deleteRecursive(String s, boolean b, Handler<AsyncResult<Void>> handler) {
+                @Override
+                public FileSystem delete(String s, Handler<AsyncResult<Void>> handler) {
                     // This check may not suffice because it succeeds no matter which file gets
                     // deleted.
                     synchronized (fileGotDeleted){
                         logger.debug( "Delete recursive '{}'.", s);
                         fileGotDeleted[0] = true;
                     }
-                    handler.handle(new SuccessfulAsyncResult<>(null));
+                    if (handler != null) handler.handle(Future.succeededFuture());
                     return this;
                 }
                 @Override public FileSystem mkdirs(String s, Handler<AsyncResult<Void>> handler) {
-                    handler.handle(new SuccessfulAsyncResult<>(null));
+                    handler.handle(Future.succeededFuture(null));
                     return this;
                 }
             };
@@ -182,7 +183,7 @@ public class FilesystemStorageTest {
                 @Override public FileSystem exists(String path, Handler<AsyncResult<Boolean>> handler) {
                     path = path.replaceAll("\\\\", "/"); // Fix windows
                     if( path.endsWith("/my/pseudo/file/to/delete") ){
-                        handler.handle(new SuccessfulAsyncResult<>(true));
+                        handler.handle(Future.succeededFuture(true));
                     }else{
                         throw new UnsupportedOperationException(msg);
                     }
@@ -195,7 +196,7 @@ public class FilesystemStorageTest {
                     }else{
                         testContext.fail( "Got unexpected path '"+path+"'." );
                     }
-                    handler.handle(new SuccessfulAsyncResult<>(null));
+                    handler.handle(Future.succeededFuture(null));
                     return this;
                 }
                 @Override public FileSystem delete(String path, Handler<AsyncResult<Void>> handler) {
@@ -211,7 +212,7 @@ public class FilesystemStorageTest {
                     }else{
                         testContext.fail( "Got unexpected path '"+path+"'." );
                     }
-                    handler.handle(new SuccessfulAsyncResult<>(null));
+                    handler.handle(Future.succeededFuture(null));
                     return this;
                 }
             };
@@ -239,6 +240,107 @@ public class FilesystemStorageTest {
         testContext.assertTrue( dir_file_deleted[0] , "Victim failed to delete one of the directories.");
         testContext.assertTrue( dir_pseudo_deleted[0] , "Victim failed to delete one of the directories.");
         testContext.assertTrue( dir_my_deleted[0] , "Victim failed to delete one of the directories.");
+    }
+
+    @Test
+    public void surviveConcurrentDirectoryDeleteWhilePut(final TestContext testContext) {
+        final Async async = testContext.async();
+        final Vertx realVertx = Vertx.vertx();
+        final FileSystem realFileSystem = realVertx.fileSystem();
+
+        // State tracking:
+        final int[] directoryGotConcurrentlyDeletedCount = {0};
+        final boolean[] victimIsDoneWithItsWork = {false};
+
+        final String root = createPseudoFileStorageRoot();
+        // Prepare request
+        // Parent directory of file we want to PUT.
+        final String dirName = "/foo/bar";
+        // File name of file we want to PUT.
+        final String baseName = "my-file";
+        // Virtual storage path of file we want to PUT.
+        final String path = dirName + "/" + baseName;
+
+        final FileSystemStorage victim;
+        { // Setup victim
+            // Intercept move call to "concurrently" delete the directory.
+            final FileSystem mockFileSystem = new DelegatingVertxFileSystem(realFileSystem) {
+                private static final int FOOL_COUNT = 3;
+                @Override
+                public FileSystem move(String src, String dst, CopyOptions options, Handler<AsyncResult<Void>> handler) {
+                    dst = dst.replaceAll("\\\\", "/"); // <-- Fix ugly operating systems.
+                    if (dst.equals(root + path)) {
+                        // Victim requested to move to final file.
+                        if (++directoryGotConcurrentlyDeletedCount[0] < FOOL_COUNT) {
+                            // Fool victim because we as "someone else" concurrently deleted prepared
+                            // directory.
+                            super.deleteBlocking(new File(dst).getParent());
+                        }
+                    }
+                    return super.move(src, dst, options, handler);
+                }
+            };
+            final Vertx mockedVertx = new FailFastVertx() {
+                private final Map<Long, Object> timers = new HashMap<>();
+                @Override
+                public FileSystem fileSystem() {
+                    return mockFileSystem;
+                }
+                @Override
+                public long setTimer(long delayMillis, Handler<Long> handler) {
+                    return realVertx.setTimer(delayMillis, handler);
+                }
+            };
+            victim = new FileSystemStorage(mockedVertx, root);
+        }
+
+        // Trigger work
+        victim.put(path, null, false, 0, null, null, 0, resource -> {
+            testContext.assertFalse(resource.error);
+            testContext.assertFalse(resource.invalid);
+            testContext.assertFalse(resource.rejected);
+            // We MUST receive a DocumentResource.
+            final DocumentResource documentResource = (DocumentResource) resource;
+            // Provide handler, first because victim tries to call this without a null
+            // check and 2nd to get notified when victim completes.
+            documentResource.endHandler = aVoid -> {
+                victimIsDoneWithItsWork[0] = true;
+            };
+            documentResource.addErrorHandler(thr -> {
+                logger.trace( "Victim reported a problem:", new Exception("Mocked error handler received a throwable.",thr) );
+                victimIsDoneWithItsWork[0] = true;
+            });
+            documentResource.writeStream.write(new BufferImpl().appendString("My test files content."));
+            // Trigger close handler to signalize we're done. Victim now has to finalize
+            // upload.
+            realVertx.setTimer(1, aLong -> documentResource.closeHandler.handle(null));
+        });
+
+        new Runnable() {
+            private int awaitCount = 0;
+
+            @Override
+            public void run() {
+                // Await victim to complete its work
+                awaitCount += 1;
+                if (victimIsDoneWithItsWork[0]) {
+                    logger.debug( "Victim completed after polling state {} times." , awaitCount );
+                    doAsserts();
+                } else if (awaitCount < 100) {
+                    // Not ready yet. Give victim some more time.
+                    realVertx.setTimer(100, aLong -> run());
+                } else {
+                    logger.debug( "Polled completion {} times.", awaitCount );
+                    testContext.fail("Victim took too long to do its job.");
+                }
+            }
+
+            private void doAsserts() {
+                testContext.assertTrue( directoryGotConcurrentlyDeletedCount[0] > 0 , "Test failed to fool victim.");
+                testContext.assertTrue(realFileSystem.existsBlocking(root + path), "Victim failed to create file");
+                async.complete();
+            }
+        }.run();
     }
 
     /**
