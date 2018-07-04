@@ -29,6 +29,7 @@ public class FilePutter {
     private final String root;
     private final String realPath;
     private final Handler<Resource> onCompleteHandler;
+    private final FileCleanupManager fileCleanupManager = new FileCleanupManager();
     private String tmpFileVirtualPath;
     private String tmpFileRealPath;
     private String tmpFileParentRealPath;
@@ -95,7 +96,7 @@ public class FilePutter {
         };
         d.addErrorHandler(err -> {
             log.error("Put file failed:", err);
-            cleanupFile(realFilePath, tmpFile, null);
+            fileCleanupManager.cleanupFile(realFilePath, tmpFile, null);
         });
         // Resolve with ready-to-use resource.
         onCompleteHandler.handle(d);
@@ -142,64 +143,6 @@ public class FilePutter {
         });
     }
 
-    /**
-     * @param realPath
-     *      Absolute, real path of the file to delete. In case this is {@code null},
-     *      no file will be deleted.
-     * @param file
-     *      The file to close. If this is null, no resource will be closed.
-     */
-    private void cleanupFile(String realPath, AsyncFile file, Handler<AsyncResult<Void>> handler) {
-        final FileSystem fileSystem = vertx.fileSystem();
-        new Runnable() {
-            @Override
-            public void run() {
-                closeFile();
-            }
-
-            private void closeFile() {
-                if (file != null ) {
-                    log.trace("A file got passed. Close it now.");
-                    try{
-                        file.close(closeResult -> {
-                            final Throwable cause = closeResult.cause();
-                            if (closeResult.succeeded()) {
-                                log.trace("File successfully closed.");
-                            } else {
-                                log.trace("Failed to close file:", cause);
-                            }
-                            deleteFile();
-                        });
-                    }catch(IllegalStateException e){
-                        if( "File handle is closed".equals(e.getMessage()) ){
-                            log.trace( "We'll ignore that file already is closed.", e );
-                            // Recover and continue with deletion because we're not interested when file
-                            // already was closed.
-                            deleteFile();
-                        }else{
-                            throw e;
-                        }
-                    }
-                } else {
-                    log.trace("Nothing to close. Go directly to deletion step.");
-                    deleteFile();
-                }
-            }
-
-            private void deleteFile() {
-                if (realPath != null) {
-                    log.trace("Deleting file '{}'.", realPath);
-                    fileSystem.delete(realPath, handler);
-                } else {
-                    log.trace("Nothing to delete. Skip.");
-                    if (handler != null) {
-                        handler.handle(Future.succeededFuture());
-                    }
-                }
-            }
-        }.run();
-    }
-
     private void resolveWithErroneousResource() {
         final Resource r = new Resource();
         r.error = true;
@@ -222,4 +165,68 @@ public class FilePutter {
             throw new RuntimeException(e);
         }
     }
+
+
+    ///////////////////////////////////////////////////////////////////////////////
+    // helper classes
+    ///////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * This is to cleanup a may open file by first close and then delete it.
+     */
+    private class FileCleanupManager {
+        /**
+         * @param realPath
+         *      Absolute, real path of the file to delete. In case this is {@code null},
+         *      no file will be deleted.
+         * @param file
+         *      The file to close. If this is null, no resource will be closed.
+         */
+        public void cleanupFile(String realPath, AsyncFile file, Handler<AsyncResult<Void>> handler) {
+            if (file != null) {
+                log.trace("A file got passed. Close it now.");
+                try {
+                    file.close(closeResult -> {
+                        final Throwable cause = closeResult.cause();
+                        if (closeResult.succeeded()) {
+                            log.trace("File successfully closed.");
+                        } else {
+                            log.trace("Failed to close file:", cause);
+                        }
+                        deleteFile(realPath, handler);
+                    });
+                } catch (IllegalStateException e) {
+                    if ("File handle is closed".equals(e.getMessage())) {
+                        log.trace("We'll ignore that file already is closed.", e);
+                        // Recover and continue with deletion because we're not interested when file
+                        // already was closed.
+                        deleteFile(realPath, handler);
+                    } else {
+                        throw e;
+                    }
+                }
+            } else {
+                log.trace("Nothing to close. Go directly to deletion step.");
+                deleteFile(realPath, handler);
+            }
+        }
+
+        /**
+         * <p>This method should remain private within {@link FileCleanupManager} and
+         * should NOT be called by {@link FilePutter}!</p>
+         */
+        private void deleteFile(String realPath, Handler<AsyncResult<Void>> handler) {
+            final FileSystem fileSystem = vertx.fileSystem();
+            if (realPath != null) {
+                log.trace("Deleting file '{}'.", realPath);
+                fileSystem.delete(realPath, handler);
+            } else {
+                log.trace("Nothing to delete. Skip.");
+                if (handler != null) {
+                    handler.handle(Future.succeededFuture());
+                }
+            }
+        }
+    }
+
 }
