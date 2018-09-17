@@ -62,7 +62,7 @@ public class FileSystemStorage implements Storage {
                 fileSystem().props(fullPath, filePropsAsyncResult -> {
                     final FileProps props = filePropsAsyncResult.result();
                     if (props.isDirectory()) {
-                        fileSystemDirLister.handleListingRequest( path , offset , count , handler );
+                        fileSystemDirLister.handleListingRequest(path, offset, count, handler);
                     } else if (props.isRegularFile()) {
                         fileSystem().open(fullPath, new OpenOptions(), event1 -> {
                             DocumentResource d = new DocumentResource();
