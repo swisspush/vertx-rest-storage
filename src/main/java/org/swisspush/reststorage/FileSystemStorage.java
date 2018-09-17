@@ -14,8 +14,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.NoSuchFileException;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -23,13 +21,15 @@ import java.util.Optional;
 public class FileSystemStorage implements Storage {
 
     private final String root;
-    private Vertx vertx;
+    private final Vertx vertx;
     private final int rootLen;
+    private final FileSystemDirLister fileSystemDirLister;
 
     private Logger log = LoggerFactory.getLogger(FileSystemStorage.class);
 
     public FileSystemStorage(Vertx vertx, String root) {
         this.vertx = vertx;
+        this.fileSystemDirLister = new FileSystemDirLister(vertx, root);
         // Unify format for simpler work.
         String tmpRoot;
         try {
@@ -62,49 +62,7 @@ public class FileSystemStorage implements Storage {
                 fileSystem().props(fullPath, filePropsAsyncResult -> {
                     final FileProps props = filePropsAsyncResult.result();
                     if (props.isDirectory()) {
-                        fileSystem().readDir(fullPath, event1 -> {
-                            final int length = event1.result().size();
-                            final CollectionResource c = new CollectionResource();
-                            c.items = new ArrayList<>(length);
-                            if (length == 0) {
-                                handler.handle(c);
-                                return;
-                            }
-                            final int dirLength = fullPath.length();
-                            for (final String item : event1.result()) {
-                                fileSystem().props(item, itemProp -> {
-                                    Resource r;
-                                    if (itemProp.succeeded() && itemProp.result().isDirectory()) {
-                                        r = new CollectionResource();
-                                    } else if (itemProp.succeeded() && itemProp.result().isRegularFile()) {
-                                        r = new DocumentResource();
-                                    } else {
-                                        r = new Resource();
-                                        r.exists = false;
-                                    }
-                                    r.name = item.substring(dirLength + 1);
-                                    c.items.add(r);
-                                    if (c.items.size() == length) {
-                                        // Remove hidden '/.tmp/' directory.
-                                        c.items.removeIf( node -> ".tmp".equals(node.name) && dirLength==root.length() );
-                                        //
-                                        Collections.sort(c.items);
-                                        int n = count;
-                                        if(n == -1) {
-                                            n = length;
-                                        }
-                                        if(offset > -1) {
-                                            if(offset >= c.items.size() || (offset+n) >= c.items.size() || (offset == 0 && n == -1)) {
-                                                handler.handle(c);
-                                            } else {
-                                                c.items = c.items.subList(offset, offset+n);
-                                                handler.handle(c);
-                                            }
-                                        }
-                                    }
-                                });
-                            }
-                        });
+                        fileSystemDirLister.handleListingRequest(path, offset, count, handler);
                     } else if (props.isRegularFile()) {
                         fileSystem().open(fullPath, new OpenOptions(), event1 -> {
                             DocumentResource d = new DocumentResource();
