@@ -4,7 +4,6 @@ import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
-import io.vertx.core.http.CaseInsensitiveHeaders;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.json.JsonArray;
@@ -406,85 +405,92 @@ public class RestStorageHandler implements Handler<HttpServerRequest> {
         }
 
         storage.put(path, etag, merge, expire, lock, lockMode, lockExpire, storeCompressed, resource -> {
+            final HttpServerResponse response = ctx.response();
             ctx.request().resume();
 
             if (resource.error) {
-                ctx.response().setStatusCode(StatusCode.INTERNAL_SERVER_ERROR.getStatusCode());
-                ctx.response().setStatusMessage(StatusCode.INTERNAL_SERVER_ERROR.getStatusMessage());
-                String message = StatusCode.INTERNAL_SERVER_ERROR.getStatusMessage();
-                if (resource.errorMessage != null) {
-                    message = resource.errorMessage;
+                final String message = (resource.errorMessage != null)
+                        ? resource.errorMessage
+                        : StatusCode.INTERNAL_SERVER_ERROR.getStatusMessage();
+                respondWith(response, StatusCode.INTERNAL_SERVER_ERROR, message);
+            } else if (resource.rejected) {
+                // TODO: Describe how 'rejected' maps to 'CONFLICT'.
+                respondWith(response, StatusCode.CONFLICT, null);
+            } else if (!resource.modified) {
+                // TODO: Describe how 'not modified' relates to those headers.
+                response.headers()
+                        .set(ETAG_HEADER.getName(), etag)
+                        .add(CONTENT_LENGTH.getName(), "0")
+                ;
+                respondWith(response, StatusCode.NOT_MODIFIED, null);
+            } else if (resource instanceof CollectionResource) {
+                // Its not allowed to override an existing collection by a resource. A
+                // collection only can be GET or DELETE.
+                response.headers()
+                        .add("Allow", "GET, DELETE")
+                ;
+                respondWith(response, StatusCode.METHOD_NOT_ALLOWED, null);
+            } else if (resource instanceof DocumentResource) {
+                if (!resource.exists) {
+                    // We'll arrive here when we try to put "/one/two/three" but "/one/two" already
+                    // exists as a resource.
+                    // See: "https://github.com/swisspush/vertx-rest-storage/blob/v2.5.7/src/main/java/org/swisspush/reststorage/RedisStorage.java#L837".
+                    // May there are also other cases this can happen. But I don't know about them.
+                    response.headers()
+                            .add("Allow", "GET, DELETE")
+                    ;
+                    respondWith(response, StatusCode.METHOD_NOT_ALLOWED, null);
+                } else {
+                    // All checks successful. We'll now store contents of the resource.
+                    putResource_storeContentsOfDocumentResource(ctx, (DocumentResource) resource);
                 }
-                ctx.response().end(message);
-            }
-            else if (resource.rejected) {
-                ctx.response().setStatusCode(StatusCode.CONFLICT.getStatusCode());
-                ctx.response().setStatusMessage(StatusCode.CONFLICT.getStatusMessage());
-                ctx.response().end();
-            }
-            else if (!resource.modified) {
-                ctx.response().setStatusCode(StatusCode.NOT_MODIFIED.getStatusCode());
-                ctx.response().setStatusMessage(StatusCode.NOT_MODIFIED.getStatusMessage());
-                ctx.response().headers().set(ETAG_HEADER.getName(), etag);
-                ctx.response().headers().add(CONTENT_LENGTH.getName(), "0");
-                ctx.response().end();
-            }
-            else if (resource instanceof CollectionResource) {
-                ctx.response().setStatusCode(StatusCode.METHOD_NOT_ALLOWED.getStatusCode());
-                ctx.response().setStatusMessage(StatusCode.METHOD_NOT_ALLOWED.getStatusMessage());
-                ctx.response().headers().add("Allow", "GET, DELETE");
-                ctx.response().end();
-            }
-            else if (resource instanceof DocumentResource) {
-                putResource_handleDocumentResource( ctx , (DocumentResource)resource );
-            }else{
+            } else {
+                // Cannot happen (Or at least theoretically it shouldn't). But in case someone
+                // manages creating such a request somehow, we at least should properly
+                // finalize our request.
                 final HttpServerRequest request = ctx.request();
-                log.error( "Unexpected case during 'PUT {}'" , request.path() );
-                respondWith( ctx.response() , StatusCode.INTERNAL_SERVER_ERROR , "Unexpected case during PUT" , null );
+                log.error("Unexpected case during 'PUT {}'", request.path());
+                respondWith(response, StatusCode.INTERNAL_SERVER_ERROR, "Unexpected case during PUT");
             }
         });
     }
 
     /**
-     * Helper method which completes response in case a {@link DocumentResource}
-     * got PUT to storage.
+     * <p>Helper method which completes response in case a {@link DocumentResource}
+     * got PUT to storage.</p>
+     *
+     * <p>This method doesn't perform correctness checks for passed arguments. The
+     * Caller is responsible to only call this method, if the resource is ready to
+     * be stored.</p>
      */
-    private void putResource_handleDocumentResource( RoutingContext ctx , DocumentResource resource ){
+    private void putResource_storeContentsOfDocumentResource(RoutingContext ctx, DocumentResource resource) {
         final HttpServerResponse response = ctx.response();
 
-        if( !resource.exists ){
-            // We'll arrive here when we try to put "/one/two/three" but "/one/two" already
-            // exists as a resource.
-            // See: "https://github.com/swisspush/vertx-rest-storage/blob/v2.5.7/src/main/java/org/swisspush/reststorage/RedisStorage.java#L837".
-            // May there are also other cases this can happen. But I don't know about them.
-            respondWith(response, StatusCode.METHOD_NOT_ALLOWED, null , new CaseInsensitiveHeaders().add("Allow", "GET, DELETE"));
-        }
-        else{
-            // Regular case. We're now ready to copy incoming payload into our resource.
-            final HttpServerRequest request = ctx.request();
-            resource.addErrorHandler( error -> {
-                respondWith(response, StatusCode.INTERNAL_SERVER_ERROR, error.getMessage(), null );
-            });
-            // Complete response when resource written.
-            resource.endHandler = event -> response.end();
-            // Close resource when payload fully read.
-            request.endHandler(v -> resource.closeHandler.handle(null));
-            request.exceptionHandler( exc -> {
-                // Report error
-                // TODO: Evaluate which properties to set. Public interface documentation of
-                //       DocumentResource is de-facto non-existent. Therefore I've no idea
-                //       which properties to set how in this case here.
-                resource.error = true;
-                resource.errorMessage = exc.getMessage();
-                // Notify error handler.
-                final Handler<Throwable> resourceErrorHandler = resource.errorHandler;
-                if( resourceErrorHandler != null ){
-                    resourceErrorHandler.handle( exc );
-                }
-            });
-            final Pump pump = Pump.pump(request, resource.writeStream);
-            pump.start();
-        }
+        // Caller is responsible to do any 'error', 'exists', 'rejected' checks on the
+        // resource. Therefore we simply go forward and store its content.
+        final HttpServerRequest request = ctx.request();
+        resource.addErrorHandler(error -> {
+            respondWith(response, StatusCode.INTERNAL_SERVER_ERROR, error.getMessage());
+        });
+        // Complete response when resource written.
+        resource.endHandler = event -> response.end();
+        // Close resource when payload fully read.
+        request.endHandler(v -> resource.closeHandler.handle(null));
+        request.exceptionHandler(exc -> {
+            // Report error
+            // TODO: Evaluate which properties to set. Public interface documentation of
+            //       DocumentResource is de-facto non-existent. Therefore I've no idea
+            //       which properties to set how in this case here.
+            resource.error = true;
+            resource.errorMessage = exc.getMessage();
+            // Notify error handler.
+            final Handler<Throwable> resourceErrorHandler = resource.errorHandler;
+            if (resourceErrorHandler != null) {
+                resourceErrorHandler.handle(exc);
+            }
+        });
+        final Pump pump = Pump.pump(request, resource.writeStream);
+        pump.start();
     }
 
     private void deleteResource(RoutingContext ctx) {
@@ -678,22 +684,19 @@ public class RestStorageHandler implements Handler<HttpServerRequest> {
     }
 
     private void respondWithNotAllowed(HttpServerRequest request) {
-        respondWith(request.response(), StatusCode.METHOD_NOT_ALLOWED, null, null);
+        respondWith(request.response(), StatusCode.METHOD_NOT_ALLOWED, null);
     }
 
     private void respondWithBadRequest(HttpServerRequest request, String responseMessage) {
-        respondWith(request.response(), StatusCode.BAD_REQUEST, responseMessage, null);
+        respondWith(request.response(), StatusCode.BAD_REQUEST, responseMessage);
     }
 
-    private void respondWith(HttpServerResponse response , StatusCode statusCode , String responseBody , MultiMap headers) {
+    private void respondWith(HttpServerResponse response, StatusCode statusCode, String responseBody) {
         response.setStatusCode(statusCode.getStatusCode());
         response.setStatusMessage(statusCode.getStatusMessage());
-        if( headers != null ){
-            response.headers().addAll( headers );
-        }
-        if( responseBody != null ){
-            response.end( responseBody );
-        }else{
+        if (responseBody != null) {
+            response.end(responseBody);
+        } else {
             response.end();
         }
     }

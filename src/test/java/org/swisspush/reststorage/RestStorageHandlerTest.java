@@ -214,7 +214,10 @@ public class RestStorageHandlerTest {
                     log.debug( "Response status message got set to '{}'.", statusMessage);
                     return this;
                 }
-                @Override public void end(String chunk) {}
+
+                @Override
+                public void end(String chunk) {
+                }
             };
             final HttpServerRequest request = new FailFastVertxHttpServerRequest(){
                 @Override public HttpServerRequest pause() {
@@ -261,15 +264,16 @@ public class RestStorageHandlerTest {
         // Setup a storage where we can configure the resource to respond when a PUT occurs.
         final Storage storage;
         {
-            storage = new FailFastRestStorage(){
-                @Override public void put(String path, String etag, boolean merge, long expire, String lockOwner, LockMode lockMode, long lockExpire, boolean storeCompressed, Handler<Resource> handler) {
+            storage = new FailFastRestStorage() {
+                @Override
+                public void put(String path, String etag, boolean merge, long expire, String lockOwner, LockMode lockMode, long lockExpire, boolean storeCompressed, Handler<Resource> handler) {
                     // Here we emulate behavior from "https://github.com/swisspush/vertx-rest-storage/blob/v2.5.7/src/main/java/org/swisspush/reststorage/RedisStorage.java#L837".
                     DocumentResource d = new DocumentResource();
                     d.exists = false;
-                    try{
-                        handler.handle( d );
-                    }catch( RuntimeException e ){
-                        testContext.fail(new Exception("Handler is not expected to throw anything for this scenario",e));
+                    try {
+                        handler.handle(d);
+                    } catch (RuntimeException e) {
+                        testContext.fail(new Exception("Handler is not expected to throw anything for this scenario", e));
                     }
                 }
             };
@@ -278,37 +282,97 @@ public class RestStorageHandlerTest {
         // Setup request we will trigger.
         final HttpServerRequest request;
         {
-            final HttpServerResponse response = new FailFastVertxHttpServerResponse(){
+            final HttpServerResponse response = new FailFastVertxHttpServerResponse() {
                 private String statusMessage;
                 private boolean ended = false;
                 private Integer statusCode = null;
                 private MultiMap headers = new CaseInsensitiveHeaders();
-                @Override public boolean ended() { return ended; }
-                @Override public HttpServerResponse setStatusCode(int statusCode) { this.statusCode = statusCode; return this; }
-                @Override public HttpServerResponse setStatusMessage(String statusMessage) { this.statusMessage=statusMessage; return this; }
-                @Override public String getStatusMessage() { return statusMessage; }
-                @Override public MultiMap headers() { return headers; }
-                @Override public void end() {
-                    testContext.assertFalse( ended );
+
+                @Override
+                public boolean ended() {
+                    return ended;
+                }
+
+                @Override
+                public HttpServerResponse setStatusCode(int statusCode) {
+                    this.statusCode = statusCode;
+                    return this;
+                }
+
+                @Override
+                public HttpServerResponse setStatusMessage(String statusMessage) {
+                    this.statusMessage = statusMessage;
+                    return this;
+                }
+
+                @Override
+                public String getStatusMessage() {
+                    return statusMessage;
+                }
+
+                @Override
+                public MultiMap headers() {
+                    return headers;
+                }
+
+                @Override
+                public void end() {
+                    testContext.assertFalse(ended);
                     ended = true;
-                    testContext.assertEquals( 405 , statusCode );
+                    testContext.assertEquals(405, statusCode);
                     // Defer to ensure handler really is done (and doesn't do any crap after he called end).
-                    vertx.setTimer( 20 , (delay)->{
+                    vertx.setTimer(20, (delay) -> {
                         async.complete();
                     });
                 }
             };
-            request = new FailFastVertxHttpServerRequest(){
+            request = new FailFastVertxHttpServerRequest() {
                 private final CaseInsensitiveHeaders headers = new CaseInsensitiveHeaders();
-                @Override public HttpMethod method() { return HttpMethod.PUT; }
-                @Override public String path() { return "/one/two"; }
-                @Override public String uri() { return "http://127.0.0.1:1234" + path(); }
-                @Override public String getHeader(String headerName) { return headers.get( headerName ); }
-                @Override public HttpServerRequest pause() { return this; }
-                @Override public HttpServerRequest resume() { return this; }
-                @Override public MultiMap headers() { return headers; }
-                @Override public HttpServerResponse response() { return response; }
-                @Override public String query() { return ""; }
+
+                @Override
+                public HttpMethod method() {
+                    return HttpMethod.PUT;
+                }
+
+                @Override
+                public String path() {
+                    return "/one/two";
+                }
+
+                @Override
+                public String uri() {
+                    return "http://127.0.0.1:1234" + path();
+                }
+
+                @Override
+                public String getHeader(String headerName) {
+                    return headers.get(headerName);
+                }
+
+                @Override
+                public HttpServerRequest pause() {
+                    return this;
+                }
+
+                @Override
+                public HttpServerRequest resume() {
+                    return this;
+                }
+
+                @Override
+                public MultiMap headers() {
+                    return headers;
+                }
+
+                @Override
+                public HttpServerResponse response() {
+                    return response;
+                }
+
+                @Override
+                public String query() {
+                    return "";
+                }
             };
         }
 
@@ -316,11 +380,11 @@ public class RestStorageHandlerTest {
         final RestStorageHandler victim;
         {
             final ModuleConfiguration myConfig = new ModuleConfiguration().prefix("/").rejectStorageWriteOnLowMemory(true);
-            victim = new RestStorageHandler( null , log , storage , myConfig );
+            victim = new RestStorageHandler(null, log, storage, myConfig);
         }
 
         // Trigger our funny request.
-        victim.handle( request );
+        victim.handle(request);
     }
 
 }
