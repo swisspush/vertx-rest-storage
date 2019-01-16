@@ -123,7 +123,9 @@ public class FileSystemStorage implements Storage {
 
     @Override
     public void put(String path, String etag, boolean merge, long expire, String lockOwner, LockMode lockMode, long lockExpire, boolean storeCompressed, Handler<Resource> handler) {
-        log.warn("PUT with storeCompressed option is not yet implemented in file system storage. Ignoring storeCompressed option value");
+        if (storeCompressed) {
+            log.warn("PUT with storeCompressed option is not yet implemented in file system storage. Ignoring storeCompressed option value");
+        }
         put(path, etag, merge, expire, "", LockMode.SILENT, 0, handler);
     }
 
