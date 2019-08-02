@@ -54,4 +54,8 @@ public abstract class RedisStorageIntegrationTestCase extends ConfigurableTestCa
         jedis.close();
         vertx.close(context.asyncAssertSuccess());
     }
+
+    protected void assertExpirableSetCount(TestContext testContext, Long count){
+        testContext.assertEquals(count, jedis.zcount("rest-storage:expirable", 0d, Double.MAX_VALUE));
+    }
 }

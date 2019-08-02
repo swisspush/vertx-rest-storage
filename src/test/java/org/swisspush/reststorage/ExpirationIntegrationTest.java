@@ -59,11 +59,81 @@ public class ExpirationIntegrationTest extends RedisStorageIntegrationTestCase {
                 then().
                 assertThat().statusCode(200);
 
+        assertExpirableSetCount(context, 1L);
+
         await().atMost(TWO_SECONDS).until(new Callable<Integer>() {
             public Integer call() throws Exception {
                 return get("expireaftertwoseconds").statusCode();
             }
         }, equalTo(404));
+        async.complete();
+    }
+
+    @Test
+    public void testPutExpiresNever(TestContext context) {
+        Async async = context.async();
+        given().
+                header("x-expire-after", "-1").
+                body("{ \"foo\": \"bar1\" }").
+                when().
+                put("expiresNever").
+                then().
+                assertThat().statusCode(200);
+
+        assertExpirableSetCount(context, 0L);
+
+        await().timeout(TWO_SECONDS).until(new Callable<Integer>() {
+            public Integer call() throws Exception {
+                return get("expiresNever").statusCode();
+            }
+        }, equalTo(200));
+        async.complete();
+    }
+
+    @Test
+    public void testPutExpiresNeverNoHeader(TestContext context) {
+        Async async = context.async();
+        given().
+                body("{ \"foo\": \"bar1\" }").
+                when().
+                put("expiresNeverNoHeader").
+                then().
+                assertThat().statusCode(200);
+
+        assertExpirableSetCount(context, 0L);
+
+        await().timeout(TWO_SECONDS).until(new Callable<Integer>() {
+            public Integer call() throws Exception {
+                return get("expiresNeverNoHeader").statusCode();
+            }
+        }, equalTo(200));
+        async.complete();
+    }
+
+    /**
+     * Should be handled as expires never, meaning there should not be
+     * an entry in the expirable set when providing a very large value
+     * for the x-expire-after header
+     */
+    @Test
+    public void testPutExpiresVeryLate(TestContext context) {
+        Async async = context.async();
+        given().
+                header("x-expire-after", "30947504176").
+                body("{ \"foo\": \"bar1\" }").
+                when().
+                put("expiresVeryLate").
+                then().
+                assertThat().statusCode(200);
+
+        assertExpirableSetCount(context, 0L);
+
+        await().timeout(TWO_SECONDS).until(new Callable<Integer>() {
+            public Integer call() throws Exception {
+                return get("expiresVeryLate").statusCode();
+            }
+        }, equalTo(200));
+
         async.complete();
     }
 
@@ -78,6 +148,7 @@ public class ExpirationIntegrationTest extends RedisStorageIntegrationTestCase {
                 then().
                 assertThat().statusCode(200);
 
+        assertExpirableSetCount(context, 1L);
 
         await().atMost(3, TimeUnit.SECONDS).until(new Callable<Integer>() {
             public Integer call() throws Exception {
