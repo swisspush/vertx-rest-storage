@@ -754,6 +754,11 @@ public class RedisStorage implements Storage {
                 expireInMillis = String.valueOf(System.currentTimeMillis() + (expire * 1000));
             }
 
+            if(Long.valueOf(expireInMillis) > Long.valueOf(MAX_EXPIRE_IN_MILLIS)){
+                // #76 reset to the defined max value
+                expireInMillis = MAX_EXPIRE_IN_MILLIS;
+            }
+
             String lockExpireInMillis = String.valueOf(System.currentTimeMillis() + (lockExpire * 1000));
 
             List<String> keys = Collections.singletonList(key);

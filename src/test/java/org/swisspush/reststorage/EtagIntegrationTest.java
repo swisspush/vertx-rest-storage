@@ -115,14 +115,14 @@ public class EtagIntegrationTest extends RedisStorageIntegrationTestCase {
                 .body(equalTo(content2))
                 .statusCode(200);
 
-        // Test with large x-expire-after header => equals maximum expiry. Expecting again a code 200 and update of the data
+        // Test with large x-expire-after header => equals maximum expiry. Expecting a code 304 (not modified) and no update of the data
         etag = get("resources/res1").getHeader(ETAG_HEADER);
         String content4 = "{ \"foo4\": \"bar4\" }";
-        given().header(IF_NONE_MATCH_HEADER, etag).header(EXPIRE_AFTER_HEADER, MAX_EXPIRE_IN_MILLIS).body(content4).when().put("resources/res1").then().assertThat().statusCode(200);
+        given().header(IF_NONE_MATCH_HEADER, etag).header(EXPIRE_AFTER_HEADER, MAX_EXPIRE_IN_MILLIS).body(content4).when().put("resources/res1").then().assertThat().statusCode(304);
         when().get("resources/res1").then().assertThat()
                 .header(ETAG_HEADER, equalTo(etag))
                 .header(ETAG_HEADER, not(equalTo("")))
-                .body(equalTo(content4))
+                .body(equalTo(content2))
                 .statusCode(200);
         async.complete();
     }

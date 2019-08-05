@@ -2,7 +2,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.swisspush</groupId>
     <artifactId>rest-storage</artifactId>
-    <version>2.5.8-SNAPSHOT</version>
+    <version>2.5.9-SNAPSHOT</version>
     <name>rest-storage</name>
     <description>
         Persistence for REST resources in the filesystem or a redis database
@@ -75,7 +75,7 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>4.10</version>
+            <version>4.12</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -87,7 +87,7 @@
         <dependency>
             <groupId>com.jayway.restassured</groupId>
             <artifactId>rest-assured</artifactId>
-            <version>2.4.1</version>
+            <version>2.9.0</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -111,7 +111,7 @@
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
-            <version>1.9.5</version>
+            <version>1.10.19</version>
             <scope>test</scope>
         </dependency>
 
