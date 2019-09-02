@@ -20,6 +20,8 @@ import java.util.Optional;
 
 public class FileSystemStorage implements Storage {
 
+    private static final OpenOptions OPEN_OPTIONS_READ_ONLY = new OpenOptions().setWrite(false).setCreate(false);
+
     private final String root;
     private final Vertx vertx;
     private final int rootLen;
@@ -64,11 +66,16 @@ public class FileSystemStorage implements Storage {
                     if (props.isDirectory()) {
                         fileSystemDirLister.handleListingRequest(path, offset, count, handler);
                     } else if (props.isRegularFile()) {
-                        fileSystem().open(fullPath, new OpenOptions(), event1 -> {
+                        fileSystem().open(fullPath, OPEN_OPTIONS_READ_ONLY, event1 -> {
                             DocumentResource d = new DocumentResource();
-                            d.length = props.size();
-                            d.readStream = event1.result();
-                            d.closeHandler = v -> event1.result().close();
+                            if (event1.failed()) {
+                                d.error = true;
+                                d.errorMessage = event1.cause().getMessage();
+                            } else {
+                                d.length = props.size();
+                                d.readStream = event1.result();
+                                d.closeHandler = v -> event1.result().close();
+                            }
                             handler.handle(d);
                         });
                     } else {
