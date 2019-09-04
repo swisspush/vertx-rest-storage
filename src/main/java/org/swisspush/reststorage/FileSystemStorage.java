@@ -69,6 +69,7 @@ public class FileSystemStorage implements Storage {
                         fileSystem().open(fullPath, OPEN_OPTIONS_READ_ONLY, event1 -> {
                             DocumentResource d = new DocumentResource();
                             if (event1.failed()) {
+                                log.warn("Failed to open {} for read", fullPath, event1.cause());
                                 d.error = true;
                                 d.errorMessage = event1.cause().getMessage();
                             } else {
