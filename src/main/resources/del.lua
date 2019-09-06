@@ -135,7 +135,11 @@ if isResource == 1 or isCollection == 1 then
 
     scriptState = "deleted"
   end
-  
+else
+  redis.log(redis.LOG_WARNING, "can't delete resource from type: "..toDelete)
+  -- remove orphan entry in the expirableSet anyway
+  redis.call('zrem', expirableSet, resourcesPrefix..toDelete)
+  redis.call('zrem', expirableSet, collectionsPrefix..toDelete)
 end
 
 return scriptState

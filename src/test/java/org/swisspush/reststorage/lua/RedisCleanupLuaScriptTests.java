@@ -122,6 +122,30 @@ public class RedisCleanupLuaScriptTests extends AbstractLuaScriptTest {
 
     }
 
+    @Test
+    public void cleanupTwoExpiredButOneResourceAlreadyDeleted() throws InterruptedException {
+
+        // ARRANGE
+        String now = String.valueOf(System.currentTimeMillis());
+        evalScriptPutNoReturn(":project:server:test:test1", "{\"content\": \"test/test1/test1\"}", now);
+        evalScriptPutNoReturn(":project:server:test:test2", "{\"content\": \"test/test1/test2\"}", now);
+        Thread.sleep(1000);
+
+        // ACT
+        assertThat(jedis.del("rest-storage:resources:project:server:test:test1"), equalTo(1L));
+        assertThat(jedis.exists("rest-storage:resources:project:server:test:test1"), equalTo(false));
+        assertThat(jedis.exists("rest-storage:resources:project:server:test:test2"), equalTo(true));
+        assertThat(jedis.zcount("rest-storage:expirable", 0, MAX_EXPIRE_IN_MILLIS), equalTo(2L));
+
+        Long count = (Long) evalScriptCleanup(0, System.currentTimeMillis());
+
+        // ASSERT
+        assertThat(count, equalTo(2L));
+        assertThat(jedis.exists("rest-storage:resources:project:server:test:test1"), equalTo(false));
+        assertThat(jedis.exists("rest-storage:resources:project:server:test:test2"), equalTo(false));
+        assertThat(jedis.zcount("rest-storage:expirable", 0, MAX_EXPIRE_IN_MILLIS), equalTo(0L));
+    }
+
     @Ignore
     @Test
     public void cleanup1000000ExpiredAmount2000000Bulksize1000() throws InterruptedException {
