@@ -2,7 +2,8 @@ package org.swisspush.reststorage.lua;
 
 import org.apache.commons.lang.text.StrSubstitutor;
 import org.apache.commons.lang.time.DurationFormatUtils;
-import org.junit.*;
+import org.junit.Ignore;
+import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -129,7 +130,6 @@ public class RedisCleanupLuaScriptTests extends AbstractLuaScriptTest {
         String now = String.valueOf(System.currentTimeMillis());
         evalScriptPutNoReturn(":project:server:test:test1", "{\"content\": \"test/test1/test1\"}", now);
         evalScriptPutNoReturn(":project:server:test:test2", "{\"content\": \"test/test1/test2\"}", now);
-        Thread.sleep(1000);
 
         // ACT
         assertThat(jedis.del("rest-storage:resources:project:server:test:test1"), equalTo(1L));

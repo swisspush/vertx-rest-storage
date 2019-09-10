@@ -31,10 +31,11 @@ local function deleteChildrenAndItself(path)
       for key,value in pairs(members) do
         local pathToDelete = path..":"..value
         deleteChildrenAndItself(pathToDelete)
-        redis.call('del', collectionsPrefix..path)
       end
+      redis.call('del', collectionsPrefix..path)
     else
-      redis.log(redis.LOG_WARNING, "can't delete resource from type: "..path)
+      redis.call('zrem', expirableSet, resourcesPrefix..path)
+      redis.log(redis.LOG_WARNING, "can't delete resource : "..path)
     end
 end
 
@@ -136,10 +137,9 @@ if isResource == 1 or isCollection == 1 then
     scriptState = "deleted"
   end
 else
-  redis.log(redis.LOG_WARNING, "can't delete resource from type: "..toDelete)
-  -- remove orphan entry in the expirableSet anyway
+  redis.log(redis.LOG_WARNING, "can't delete resource : "..toDelete)
+  -- remove orphan entry in the expirableSet anyway (if there is actually one)
   redis.call('zrem', expirableSet, resourcesPrefix..toDelete)
-  redis.call('zrem', expirableSet, collectionsPrefix..toDelete)
 end
 
 return scriptState
