@@ -131,15 +131,17 @@ public class RedisCleanupLuaScriptTests extends AbstractLuaScriptTest {
         evalScriptPutNoReturn(":project:server:test:test1", "{\"content\": \"test/test1/test1\"}", now);
         evalScriptPutNoReturn(":project:server:test:test2", "{\"content\": \"test/test1/test2\"}", now);
 
-        // ACT
+        // delete bypassing the script, results in an orphan entry in the expirableSet
         assertThat(jedis.del("rest-storage:resources:project:server:test:test1"), equalTo(1L));
         assertThat(jedis.exists("rest-storage:resources:project:server:test:test1"), equalTo(false));
         assertThat(jedis.exists("rest-storage:resources:project:server:test:test2"), equalTo(true));
         assertThat(jedis.zcount("rest-storage:expirable", 0, MAX_EXPIRE_IN_MILLIS), equalTo(2L));
 
+        // ACT
         Long count = (Long) evalScriptCleanup(0, System.currentTimeMillis());
 
         // ASSERT
+        // refer to https://github.com/swisspush/vertx-rest-storage/issues/83, we actually deleted only 1 but still say 2
         assertThat(count, equalTo(2L));
         assertThat(jedis.exists("rest-storage:resources:project:server:test:test1"), equalTo(false));
         assertThat(jedis.exists("rest-storage:resources:project:server:test:test2"), equalTo(false));
