@@ -4,6 +4,7 @@ local toDelete = KEYS[1]
 
 -- Important: This Script here is includes in cleanup.lua. The ARGV-Array is used again in this including script
 -- Remember to harmonize the cleanup.lua ARGV parameters with ordering, format and purpose here in THIS script
+-- Take care when using "return" in this script, see https://github.com/swisspush/vertx-rest-storage/issues/83
 local resourcesPrefix = ARGV[1]
 local collectionsPrefix = ARGV[2]
 local deltaResourcesPrefix = ARGV[3]
@@ -31,10 +32,10 @@ local function deleteChildrenAndItself(path)
       for key,value in pairs(members) do
         local pathToDelete = path..":"..value
         deleteChildrenAndItself(pathToDelete)
-        redis.call('del', collectionsPrefix..path)
       end
+      redis.call('del', collectionsPrefix..path)
     else
-      redis.log(redis.LOG_WARNING, "can't delete resource from type: "..path)
+      redis.log(redis.LOG_WARNING, "can't delete resource: "..path)
     end
 end
 
@@ -135,7 +136,10 @@ if isResource == 1 or isCollection == 1 then
 
     scriptState = "deleted"
   end
-  
+else
+  redis.log(redis.LOG_WARNING, "resource "..toDelete.." not present, will remove possible entry in expirableSet anyway")
+  -- remove orphan entry in the expirableSet anyway (if there is actually one)
+  redis.call('zrem', expirableSet, resourcesPrefix..toDelete)
 end
 
 return scriptState
