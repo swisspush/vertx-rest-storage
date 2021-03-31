@@ -335,7 +335,7 @@ public class RestStorageHandler implements Handler<HttpServerRequest> {
                 log.warn("Received request with " + IMPORTANCE_LEVEL_HEADER.getName() + " header, but rejecting storage writes on low memory feature is disabled");
             }
         } else if (rejectStorageWriteOnLowMemory) {
-            log.info("Received PUT request to " + ctx.request().uri() + " without " + IMPORTANCE_LEVEL_HEADER.getName()
+            log.debug("Received PUT request to " + ctx.request().uri() + " without " + IMPORTANCE_LEVEL_HEADER.getName()
                     + " header. Going to handle this request with highest importance");
         }
 
