@@ -59,33 +59,43 @@ public class FileSystemStorage implements Storage {
     @Override
     public void get(String path, String etag, final int offset, final int count, final Handler<Resource> handler) {
         final String fullPath = canonicalize(path);
+        log.debug("GET {}", path);
         fileSystem().exists(fullPath, booleanAsyncResult -> {
             if (booleanAsyncResult.result()) {
                 fileSystem().props(fullPath, filePropsAsyncResult -> {
                     final FileProps props = filePropsAsyncResult.result();
                     if (props.isDirectory()) {
+                        log.debug("Delegate directory listing of '{}'", path);
                         fileSystemDirLister.handleListingRequest(path, offset, count, handler);
                     } else if (props.isRegularFile()) {
+                        log.debug("Open file '{}' ({})", path, fullPath);
                         fileSystem().open(fullPath, OPEN_OPTIONS_READ_ONLY, event1 -> {
                             DocumentResource d = new DocumentResource();
                             if (event1.failed()) {
-                                log.warn("Failed to open {} for read", fullPath, event1.cause());
+                                log.warn("Failed to open '{}' for read", path, event1.cause());
                                 d.error = true;
                                 d.errorMessage = event1.cause().getMessage();
                             } else {
+                                log.debug("Successfully opened '{}' which is {} bytes in size.", path, props.size());
                                 d.length = props.size();
-                                d.readStream = event1.result();
-                                d.closeHandler = v -> event1.result().close();
+                                d.readStream = new LoggingFileReadStream(d.length, path, event1.result());
+                                d.closeHandler = v -> {
+                                    log.debug("Resource got closed. Close file now '{}'", path);
+                                    event1.result().close();
+                                };
                             }
                             handler.handle(d);
                         });
                     } else {
+                        // Is it a link maybe? Block device? Char device?
+                        log.warn("Unknown filetype. Report 'no such file' for '{}'", path);
                         Resource r = new Resource();
                         r.exists = false;
                         handler.handle(r);
                     }
                 });
             } else {
+                log.debug("No such file '{}' ({})", path, fullPath);
                 Resource r = new Resource();
                 r.exists = false;
                 handler.handle(r);
