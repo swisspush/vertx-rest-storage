@@ -96,7 +96,7 @@ public class RestStorageHandlerTest {
         restStorageHandler.handle(request);
 
         // ASSERT
-        verify(log, times(1)).info(
+        verify(log, times(1)).debug(
                 eq("Received PUT request to /some/resource without x-importance-level header. " +
                         "Going to handle this request with highest importance"));
     }
