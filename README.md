@@ -247,4 +247,4 @@ Caution: The redis storage implementation does not currently support streaming. 
 This module uses Vert.x v3.3.3 (or later), so **Java 8** is required.
 
 
-[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/lbovet/vertx-rest-storage/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
+[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/lbovet/vertx-rest-storage/trend.png)](https://bitdeli.com/free "Bitdeli Badge") 
