@@ -143,7 +143,7 @@ public class FailFastVertxHttpServerRequest implements HttpServerRequest {
     }
 
     @Override
-    public X509Certificate[] peerCertificateChain() throws SSLPeerUnverifiedException {
+    public X509Certificate[] peerCertificateChain() {
         throw new UnsupportedOperationException(msg);
     }
 

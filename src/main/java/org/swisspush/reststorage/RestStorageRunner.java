@@ -12,8 +12,7 @@ import io.vertx.core.logging.LoggerFactory;
 public class RestStorageRunner {
 
     public static void main(String[] args) {
-        Vertx.vertx().deployVerticle("org.swisspush.reststorage.RestStorageMod", event -> {
-            LoggerFactory.getLogger(RestStorageMod.class).info("rest-storage started");
-        });
+        Vertx.vertx().deployVerticle("org.swisspush.reststorage.RestStorageMod", event ->
+                LoggerFactory.getLogger(RestStorageMod.class).info("rest-storage started"));
     }
 }

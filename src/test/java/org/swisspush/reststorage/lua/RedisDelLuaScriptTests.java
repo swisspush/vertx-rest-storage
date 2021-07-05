@@ -179,10 +179,10 @@ public class RedisDelLuaScriptTests extends AbstractLuaScriptTest {
 
         // ASSERT
         String afterNow = String.valueOf(System.currentTimeMillis());
-        assertThat(jedis.zrangeByScore("rest-storage:collections:project", Double.valueOf(afterNow).doubleValue(), MAX_EXPIRE_IN_MILLIS).size(), equalTo(1));
-        assertThat(jedis.zrangeByScore("rest-storage:collections:project:server", Double.valueOf(afterNow).doubleValue(), MAX_EXPIRE_IN_MILLIS).size(), equalTo(1));
-        assertThat(jedis.zrangeByScore("rest-storage:collections:project:server:test", Double.valueOf(afterNow).doubleValue(), MAX_EXPIRE_IN_MILLIS).size(), equalTo(1));
-        assertThat(jedis.zrangeByScore("rest-storage:collections:project:server:test:test11", Double.valueOf(afterNow).doubleValue(), MAX_EXPIRE_IN_MILLIS).size(), equalTo(1));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project", Double.parseDouble(afterNow), MAX_EXPIRE_IN_MILLIS).size(), equalTo(1));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project:server", Double.parseDouble(afterNow), MAX_EXPIRE_IN_MILLIS).size(), equalTo(1));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project:server:test", Double.parseDouble(afterNow), MAX_EXPIRE_IN_MILLIS).size(), equalTo(1));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project:server:test:test11", Double.parseDouble(afterNow), MAX_EXPIRE_IN_MILLIS).size(), equalTo(1));
         assertThat(jedis.exists("rest-storage:resources:project:server:test:test11:test22"), equalTo(true));
     }
 
@@ -209,7 +209,7 @@ public class RedisDelLuaScriptTests extends AbstractLuaScriptTest {
     }
 
     @Test
-    public void deleteSilentLockedResourceWithoutOwnership() throws InterruptedException {
+    public void deleteSilentLockedResourceWithoutOwnership() {
         // ARRANGE
         String path = ":project:lock:delete:";
         String content = "{\"content\":\"locked\"}";
@@ -231,7 +231,7 @@ public class RedisDelLuaScriptTests extends AbstractLuaScriptTest {
     }
 
     @Test
-    public void deleteSilentLockedResourceWithOwnership() throws InterruptedException {
+    public void deleteSilentLockedResourceWithOwnership() {
         // ARRANGE
         String path = ":project:lock:delete:";
         String content = "{\"content\":\"locked\"}";
@@ -270,7 +270,7 @@ public class RedisDelLuaScriptTests extends AbstractLuaScriptTest {
     }
 
     @Test
-    public void deleteRejectLockedResourceWithOwnership() throws InterruptedException {
+    public void deleteRejectLockedResourceWithOwnership() {
         // ARRANGE
         String path = ":project:lock:delete:";
         String content = "{\"content\":\"locked\"}";

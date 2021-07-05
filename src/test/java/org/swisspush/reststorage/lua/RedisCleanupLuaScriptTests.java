@@ -30,7 +30,7 @@ public class RedisCleanupLuaScriptTests extends AbstractLuaScriptTest {
         Long count = (Long) evalScriptCleanup(0, System.currentTimeMillis());
 
         // ASSERT
-        assertThat(count, equalTo(2l));
+        assertThat(count, equalTo(2L));
         assertThat(jedis.zrangeByScore("rest-storage:collections:project", getNowAsDouble(), MAX_EXPIRE_IN_MILLIS).size(), equalTo(0));
         assertThat(jedis.zrangeByScore("rest-storage:collections:project:server", getNowAsDouble(), MAX_EXPIRE_IN_MILLIS).size(), equalTo(0));
         assertThat(jedis.zrangeByScore("rest-storage:collections:project:server:test", getNowAsDouble(), MAX_EXPIRE_IN_MILLIS).size(), equalTo(0));
@@ -56,7 +56,7 @@ public class RedisCleanupLuaScriptTests extends AbstractLuaScriptTest {
         Long count = (Long) evalScriptCleanup(0, System.currentTimeMillis());
 
         // ASSERT
-        assertThat(count, equalTo(1l));
+        assertThat(count, equalTo(1L));
         assertThat(jedis.zrangeByScore("rest-storage:collections:project", getNowAsDouble(), MAX_EXPIRE_IN_MILLIS).size(), equalTo(1));
         assertThat(jedis.zrangeByScore("rest-storage:collections:project:server", getNowAsDouble(), MAX_EXPIRE_IN_MILLIS).size(), equalTo(1));
         assertThat(jedis.zrangeByScore("rest-storage:collections:project:server:test", getNowAsDouble(), MAX_EXPIRE_IN_MILLIS).size(), equalTo(1));
@@ -82,9 +82,9 @@ public class RedisCleanupLuaScriptTests extends AbstractLuaScriptTest {
         Long count2round = (Long) evalScriptCleanup(0, System.currentTimeMillis(), 10);
 
         // ASSERT
-        assertThat(count1round, equalTo(10l));
-        assertThat(count2round, equalTo(5l));
-        assertThat(jedis.zcount("rest-storage:collections:project:server:test:test1", 0d, MAX_EXPIRE_IN_MILLIS), equalTo(15l));
+        assertThat(count1round, equalTo(10L));
+        assertThat(count2round, equalTo(5L));
+        assertThat(jedis.zcount("rest-storage:collections:project:server:test:test1", 0d, MAX_EXPIRE_IN_MILLIS), equalTo(15L));
     }
 
     @Test
@@ -112,19 +112,19 @@ public class RedisCleanupLuaScriptTests extends AbstractLuaScriptTest {
         System.out.println("clean 7K: " + DurationFormatUtils.formatDuration(end - start, "HH:mm:ss:SSS"));
 
         // ASSERT
-        assertThat(count1round, equalTo(1000l));
-        assertThat(count2round, equalTo(1000l));
-        assertThat(count3round, equalTo(1000l));
-        assertThat(count4round, equalTo(1000l));
-        assertThat(count5round, equalTo(1000l));
-        assertThat(count6round, equalTo(1000l));
-        assertThat(count7round, equalTo(1000l));
-        assertThat(jedis.zcount("rest-storage:collections:project:server:test:test1", 0d, MAX_EXPIRE_IN_MILLIS), equalTo(14000l));
+        assertThat(count1round, equalTo(1000L));
+        assertThat(count2round, equalTo(1000L));
+        assertThat(count3round, equalTo(1000L));
+        assertThat(count4round, equalTo(1000L));
+        assertThat(count5round, equalTo(1000L));
+        assertThat(count6round, equalTo(1000L));
+        assertThat(count7round, equalTo(1000L));
+        assertThat(jedis.zcount("rest-storage:collections:project:server:test:test1", 0d, MAX_EXPIRE_IN_MILLIS), equalTo(14000L));
 
     }
 
     @Test
-    public void cleanupTwoExpiredButOneResourceAlreadyDeleted() throws InterruptedException {
+    public void cleanupTwoExpiredButOneResourceAlreadyDeleted() {
 
         // ARRANGE
         String now = String.valueOf(System.currentTimeMillis());
@@ -173,7 +173,7 @@ public class RedisCleanupLuaScriptTests extends AbstractLuaScriptTest {
         System.out.println("clean 1M: " + DurationFormatUtils.formatDuration(end - start, "HH:mm:ss:SSS"));
 
         // ASSERT
-        assertThat(jedis.zcount("rest-storage:collections:project:server:test:test1", getNowAsDouble(), MAX_EXPIRE_IN_MILLIS), equalTo(1000000l));
+        assertThat(jedis.zcount("rest-storage:collections:project:server:test:test1", getNowAsDouble(), MAX_EXPIRE_IN_MILLIS), equalTo(1000000L));
     }
 
     private Object evalScriptCleanup(final long minscore, final long now) {
@@ -187,7 +187,7 @@ public class RedisCleanupLuaScriptTests extends AbstractLuaScriptTest {
     @SuppressWarnings({ "rawtypes", "unchecked", "serial" })
     private Object evalScriptCleanup(final long minscore, final long now, final int bulkSize, final boolean stripLogNotice) {
 
-        Map<String, String> values = new HashMap<String, String>();
+        Map<String, String> values = new HashMap<>();
         values.put("delscript", readScript("del.lua", stripLogNotice).replaceAll("return", "--return"));
 
         StrSubstitutor sub = new StrSubstitutor(values, "--%(", ")");

@@ -6,13 +6,13 @@ import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
 import static com.jayway.awaitility.Awaitility.await;
 import static com.jayway.awaitility.Duration.TWO_SECONDS;
 import static com.jayway.restassured.RestAssured.*;
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.core.IsEqual.equalTo;
 
 @RunWith(VertxUnitRunner.class)
@@ -61,11 +61,7 @@ public class ExpirationIntegrationTest extends RedisStorageIntegrationTestCase {
 
         assertExpirableSetCount(context, 1L);
 
-        await().atMost(TWO_SECONDS).until(new Callable<Integer>() {
-            public Integer call() throws Exception {
-                return get("expireaftertwoseconds").statusCode();
-            }
-        }, equalTo(404));
+        await().atMost(TWO_SECONDS).until(() -> get("expireaftertwoseconds").statusCode(), equalTo(404));
         async.complete();
     }
 
@@ -82,11 +78,7 @@ public class ExpirationIntegrationTest extends RedisStorageIntegrationTestCase {
 
         assertExpirableSetCount(context, 0L);
 
-        await().timeout(TWO_SECONDS).until(new Callable<Integer>() {
-            public Integer call() throws Exception {
-                return get("expiresNever").statusCode();
-            }
-        }, equalTo(200));
+        await().timeout(TWO_SECONDS).until(() -> get("expiresNever").statusCode(), equalTo(200));
         async.complete();
     }
 
@@ -102,11 +94,7 @@ public class ExpirationIntegrationTest extends RedisStorageIntegrationTestCase {
 
         assertExpirableSetCount(context, 0L);
 
-        await().timeout(TWO_SECONDS).until(new Callable<Integer>() {
-            public Integer call() throws Exception {
-                return get("expiresNeverNoHeader").statusCode();
-            }
-        }, equalTo(200));
+        await().timeout(TWO_SECONDS).until(() -> get("expiresNeverNoHeader").statusCode(), equalTo(200));
         async.complete();
     }
 
@@ -128,11 +116,7 @@ public class ExpirationIntegrationTest extends RedisStorageIntegrationTestCase {
 
         assertExpirableSetCount(context, 0L);
 
-        await().timeout(TWO_SECONDS).until(new Callable<Integer>() {
-            public Integer call() throws Exception {
-                return get("expiresVeryLate").statusCode();
-            }
-        }, equalTo(200));
+        await().timeout(TWO_SECONDS).until(() -> get("expiresVeryLate").statusCode(), equalTo(200));
 
         async.complete();
     }
@@ -150,11 +134,7 @@ public class ExpirationIntegrationTest extends RedisStorageIntegrationTestCase {
 
         assertExpirableSetCount(context, 1L);
 
-        await().atMost(3, TimeUnit.SECONDS).until(new Callable<Integer>() {
-            public Integer call() throws Exception {
-                return get("putafterexpiration").statusCode();
-            }
-        }, equalTo(404));
+        await().atMost(3, TimeUnit.SECONDS).until(() -> get("putafterexpiration").statusCode(), equalTo(404));
 
         given().
                 header("x-expire-after", "10").

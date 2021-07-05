@@ -183,9 +183,7 @@ public class RestStorageHandlerTest {
                         }
                         @Override public boolean writeQueueFull() { return false; }
                     };
-                    resource.closeHandler = v -> {
-                        log.debug("Resource closeHandler got called.");
-                    };
+                    resource.closeHandler = v -> log.debug("Resource closeHandler got called.");
                     resource.addErrorHandler( err -> {
                         synchronized (errorHandlerGotCalledPtr){
                             log.debug("Resource errorHandler got called.");
@@ -286,7 +284,7 @@ public class RestStorageHandlerTest {
                 private String statusMessage;
                 private boolean ended = false;
                 private Integer statusCode = null;
-                private MultiMap headers = new CaseInsensitiveHeaders();
+                private final MultiMap headers = new CaseInsensitiveHeaders();
 
                 @Override
                 public boolean ended() {
@@ -321,9 +319,7 @@ public class RestStorageHandlerTest {
                     ended = true;
                     testContext.assertEquals(405, statusCode);
                     // Defer to ensure handler really is done (and doesn't do any crap after he called end).
-                    vertx.setTimer(20, (delay) -> {
-                        async.complete();
-                    });
+                    vertx.setTimer(20, (delay) -> async.complete());
                 }
             };
             request = new FailFastVertxHttpServerRequest() {

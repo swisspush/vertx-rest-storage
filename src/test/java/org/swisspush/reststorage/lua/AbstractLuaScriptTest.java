@@ -72,7 +72,7 @@ public abstract class AbstractLuaScriptTest {
                 if (stripLogNotice && line.contains("redis.LOG_NOTICE,")) {
                     continue;
                 }
-                sb.append(line + "\n");
+                sb.append(line).append("\n");
             }
 
         } catch (IOException e) {

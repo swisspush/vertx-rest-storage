@@ -22,6 +22,7 @@ import org.swisspush.reststorage.util.ModuleConfiguration;
 import org.swisspush.reststorage.util.ResourceNameUtil;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.text.DecimalFormat;
 import java.util.*;
 
@@ -96,19 +97,13 @@ public class RedisStorage implements Storage {
         luaScripts.put(LuaScript.CLEANUP, luaCleanupScriptState);
 
         if(config.isRejectStorageWriteOnLowMemory()){
-            calculateCurrentMemoryUsage().setHandler(optionalAsyncResult -> {
-                currentMemoryUsageOptional = optionalAsyncResult.result();
-            });
+            calculateCurrentMemoryUsage().setHandler(optionalAsyncResult -> currentMemoryUsageOptional = optionalAsyncResult.result());
             startPeriodicMemoryUsageUpdate(config.getFreeMemoryCheckIntervalMs());
         }
     }
 
     private void startPeriodicMemoryUsageUpdate(long intervalMs){
-        vertx.setPeriodic(intervalMs, updateMemoryUsage ->{
-            calculateCurrentMemoryUsage().setHandler(optionalAsyncResult -> {
-                currentMemoryUsageOptional = optionalAsyncResult.result();
-            });
-        });
+        vertx.setPeriodic(intervalMs, updateMemoryUsage -> calculateCurrentMemoryUsage().setHandler(optionalAsyncResult -> currentMemoryUsageOptional = optionalAsyncResult.result()));
     }
 
     public Future<Optional<Float>> calculateCurrentMemoryUsage(){
@@ -480,7 +475,7 @@ public class RedisStorage implements Storage {
                     String message = event.cause().getMessage();
                     if(message != null && message.startsWith("NOSCRIPT")) {
                         log.warn("get script couldn't be found, reload it");
-                        log.warn("amount the script got loaded: " + String.valueOf(executionCounter));
+                        log.warn("amount the script got loaded: " + executionCounter);
                         if(executionCounter > 10) {
                             log.error("amount the script got loaded is higher than 10, we abort");
                         } else {
@@ -583,7 +578,7 @@ public class RedisStorage implements Storage {
                     String message = event.cause().getMessage();
                     if(message != null && message.startsWith("NOSCRIPT")) {
                         log.warn("storageExpand script couldn't be found, reload it");
-                        log.warn("amount the script got loaded: " + String.valueOf(executionCounter));
+                        log.warn("amount the script got loaded: " + executionCounter);
                         if(executionCounter > 10) {
                             log.error("amount the script got loaded is higher than 10, we abort");
                         } else {
@@ -854,7 +849,7 @@ public class RedisStorage implements Storage {
                     String message = event.cause().getMessage();
                     if(message != null && message.startsWith("NOSCRIPT")) {
                         log.warn("put script couldn't be found, reload it");
-                        log.warn("amount the script got loaded: " + String.valueOf(executionCounter));
+                        log.warn("amount the script got loaded: " + executionCounter);
                         if(executionCounter > 10) {
                             log.error("amount the script got loaded is higher than 10, we abort");
                         } else {
@@ -916,7 +911,7 @@ public class RedisStorage implements Storage {
             redisClient.evalsha(luaScripts.get(LuaScript.DELETE).getSha(), keys, arguments, event -> {
                 if(event.cause() != null && event.cause().getMessage().startsWith("NOSCRIPT")) {
                     log.warn("delete script couldn't be found, reload it");
-                    log.warn("amount the script got loaded: " + String.valueOf(executionCounter));
+                    log.warn("amount the script got loaded: " + executionCounter);
                     if(executionCounter > 10) {
                         log.error("amount the script got loaded is higher than 10, we abort");
                     } else {
@@ -1032,19 +1027,11 @@ public class RedisStorage implements Storage {
     }
 
     private String encodeBinary(byte[] bytes) {
-        try {
-            return new String(bytes, "ISO-8859-1");
-        } catch (UnsupportedEncodingException e) {
-            throw new RuntimeException(e);
-        }
+        return new String(bytes, StandardCharsets.ISO_8859_1);
     }
 
     private byte[] decodeBinary(String s) {
-        try {
-            return s.getBytes("ISO-8859-1");
-        } catch (UnsupportedEncodingException e) {
-            throw new RuntimeException(e);
-        }
+        return s.getBytes(StandardCharsets.ISO_8859_1);
     }
 
     private void notFound(Handler<Resource> handler) {

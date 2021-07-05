@@ -89,11 +89,7 @@ public class FilePutter {
     private void resolveWithTmpFileResource(String realFilePath, final AsyncFile tmpFile) {
         final DocumentResource d = new DocumentResource();
         d.writeStream = tmpFile;
-        d.closeHandler = v -> {
-            tmpFile.close(ev -> {
-                moveTmpFileToFinalDestination(d);
-            });
-        };
+        d.closeHandler = v -> tmpFile.close(ev -> moveTmpFileToFinalDestination(d));
         d.addErrorHandler(err -> {
             log.error("Put file failed:", err);
             fileCleanupManager.cleanupFile(realFilePath, tmpFile, null);

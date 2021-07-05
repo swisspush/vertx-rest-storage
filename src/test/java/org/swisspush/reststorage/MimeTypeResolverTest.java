@@ -5,7 +5,7 @@ import org.junit.Test;
 
 public class MimeTypeResolverTest {
 
-    private MimeTypeResolver mimeTypeResolver=new MimeTypeResolver("gugus/gaga");
+    private final MimeTypeResolver mimeTypeResolver = new MimeTypeResolver("gugus/gaga");
 
     @Test
     public void testDefault() {

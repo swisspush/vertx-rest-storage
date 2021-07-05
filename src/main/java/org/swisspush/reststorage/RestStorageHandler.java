@@ -469,9 +469,7 @@ public class RestStorageHandler implements Handler<HttpServerRequest> {
         // Caller is responsible to do any 'error', 'exists', 'rejected' checks on the
         // resource. Therefore we simply go forward and store its content.
         final HttpServerRequest request = ctx.request();
-        resource.addErrorHandler(error -> {
-            respondWith(response, StatusCode.INTERNAL_SERVER_ERROR, error.getMessage());
-        });
+        resource.addErrorHandler(error -> respondWith(response, StatusCode.INTERNAL_SERVER_ERROR, error.getMessage()));
         // Complete response when resource written.
         resource.endHandler = event -> response.end();
         // Close resource when payload fully read.
@@ -567,93 +565,90 @@ public class RestStorageHandler implements Handler<HttpServerRequest> {
         if (!containsParam(ctx.request().params(), STORAGE_EXPAND_PARAMETER)) {
             respondWithNotAllowed(ctx.request());
         } else {
-            ctx.request().bodyHandler(new Handler<Buffer>() {
-                @Override
-                public void handle(Buffer event) {
-                    List<String> subResourceNames = new ArrayList<>();
-                    try {
-                        JsonObject body = new JsonObject(event.toString());
-                        JsonArray subResourcesArray = body.getJsonArray("subResources");
-                        if (subResourcesArray == null) {
-                            respondWithBadRequest(ctx.request(), "Bad Request: Expected array field 'subResources' with names of resources");
-                            return;
-                        }
-
-                        for (int i = 0; i < subResourcesArray.size(); i++) {
-                            subResourceNames.add(subResourcesArray.getString(i));
-                        }
-                        ResourceNameUtil.replaceColonsAndSemiColonsInList(subResourceNames);
-                    } catch (RuntimeException ex) {
-                        respondWithBadRequest(ctx.request(), "Bad Request: Unable to parse body of storageExpand POST request");
+            ctx.request().bodyHandler(event -> {
+                List<String> subResourceNames = new ArrayList<>();
+                try {
+                    JsonObject body = new JsonObject(event.toString());
+                    JsonArray subResourcesArray = body.getJsonArray("subResources");
+                    if (subResourcesArray == null) {
+                        respondWithBadRequest(ctx.request(), "Bad Request: Expected array field 'subResources' with names of resources");
                         return;
                     }
 
-                    final String path = cleanPath(ctx.request().path().substring(prefixFixed.length()));
-                    final String etag = ctx.request().headers().get(IF_NONE_MATCH_HEADER.getName());
-                    storage.storageExpand(path, etag, subResourceNames, resource -> {
-
-                        if (resource.error) {
-                            ctx.response().setStatusCode(StatusCode.CONFLICT.getStatusCode());
-                            ctx.response().setStatusMessage(StatusCode.CONFLICT.getStatusMessage());
-                            String message = StatusCode.CONFLICT.getStatusMessage();
-                            if (resource.errorMessage != null) {
-                                message = resource.errorMessage;
-                            }
-                            ctx.response().end(message);
-                            return;
-                        }
-
-                        if (resource.invalid) {
-                            ctx.response().setStatusCode(StatusCode.INTERNAL_SERVER_ERROR.getStatusCode());
-                            ctx.response().setStatusMessage(StatusCode.INTERNAL_SERVER_ERROR.getStatusMessage());
-
-                            String message = StatusCode.INTERNAL_SERVER_ERROR.getStatusMessage();
-                            if (resource.invalidMessage != null) {
-                                message = resource.invalidMessage;
-                            }
-                            ctx.response().end(new JsonObject().put("error", message).encode());
-                            return;
-                        }
-
-                        if (!resource.modified) {
-                            ctx.response().setStatusCode(StatusCode.NOT_MODIFIED.getStatusCode());
-                            ctx.response().setStatusMessage(StatusCode.NOT_MODIFIED.getStatusMessage());
-                            ctx.response().headers().set(ETAG_HEADER.getName(), etag);
-                            ctx.response().headers().add(CONTENT_LENGTH.getName(), "0");
-                            ctx.response().end();
-                            return;
-                        }
-
-                        if (resource.exists) {
-                            if (log.isTraceEnabled()) {
-                                log.trace("RestStorageHandler resource is a DocumentResource: " + ctx.request().uri());
-                            }
-
-                            String mimeType = mimeTypeResolver.resolveMimeType(path);
-                            final DocumentResource documentResource = (DocumentResource) resource;
-                            if (documentResource.etag != null && !documentResource.etag.isEmpty()) {
-                                ctx.response().headers().add(ETAG_HEADER.getName(), documentResource.etag);
-                            }
-                            ctx.response().headers().add(CONTENT_LENGTH.getName(), "" + documentResource.length);
-                            ctx.response().headers().add(CONTENT_TYPE.getName(), mimeType);
-                            final Pump pump = Pump.pump(documentResource.readStream, ctx.response());
-                            documentResource.readStream.endHandler(nothing -> {
-                                documentResource.closeHandler.handle(null);
-                                ctx.response().end();
-                            });
-                            pump.start();
-                            // TODO: exception handlers
-
-                        } else {
-                            if (log.isTraceEnabled()) {
-                                log.trace("RestStorageHandler Could not find resource: " + ctx.request().uri());
-                            }
-                            ctx.response().setStatusCode(StatusCode.NOT_FOUND.getStatusCode());
-                            ctx.response().setStatusMessage(StatusCode.NOT_FOUND.getStatusMessage());
-                            ctx.response().end(StatusCode.NOT_FOUND.toString());
-                        }
-                    });
+                    for (int i = 0; i < subResourcesArray.size(); i++) {
+                        subResourceNames.add(subResourcesArray.getString(i));
+                    }
+                    ResourceNameUtil.replaceColonsAndSemiColonsInList(subResourceNames);
+                } catch (RuntimeException ex) {
+                    respondWithBadRequest(ctx.request(), "Bad Request: Unable to parse body of storageExpand POST request");
+                    return;
                 }
+
+                final String path = cleanPath(ctx.request().path().substring(prefixFixed.length()));
+                final String etag = ctx.request().headers().get(IF_NONE_MATCH_HEADER.getName());
+                storage.storageExpand(path, etag, subResourceNames, resource -> {
+
+                    if (resource.error) {
+                        ctx.response().setStatusCode(StatusCode.CONFLICT.getStatusCode());
+                        ctx.response().setStatusMessage(StatusCode.CONFLICT.getStatusMessage());
+                        String message = StatusCode.CONFLICT.getStatusMessage();
+                        if (resource.errorMessage != null) {
+                            message = resource.errorMessage;
+                        }
+                        ctx.response().end(message);
+                        return;
+                    }
+
+                    if (resource.invalid) {
+                        ctx.response().setStatusCode(StatusCode.INTERNAL_SERVER_ERROR.getStatusCode());
+                        ctx.response().setStatusMessage(StatusCode.INTERNAL_SERVER_ERROR.getStatusMessage());
+
+                        String message = StatusCode.INTERNAL_SERVER_ERROR.getStatusMessage();
+                        if (resource.invalidMessage != null) {
+                            message = resource.invalidMessage;
+                        }
+                        ctx.response().end(new JsonObject().put("error", message).encode());
+                        return;
+                    }
+
+                    if (!resource.modified) {
+                        ctx.response().setStatusCode(StatusCode.NOT_MODIFIED.getStatusCode());
+                        ctx.response().setStatusMessage(StatusCode.NOT_MODIFIED.getStatusMessage());
+                        ctx.response().headers().set(ETAG_HEADER.getName(), etag);
+                        ctx.response().headers().add(CONTENT_LENGTH.getName(), "0");
+                        ctx.response().end();
+                        return;
+                    }
+
+                    if (resource.exists) {
+                        if (log.isTraceEnabled()) {
+                            log.trace("RestStorageHandler resource is a DocumentResource: " + ctx.request().uri());
+                        }
+
+                        String mimeType = mimeTypeResolver.resolveMimeType(path);
+                        final DocumentResource documentResource = (DocumentResource) resource;
+                        if (documentResource.etag != null && !documentResource.etag.isEmpty()) {
+                            ctx.response().headers().add(ETAG_HEADER.getName(), documentResource.etag);
+                        }
+                        ctx.response().headers().add(CONTENT_LENGTH.getName(), "" + documentResource.length);
+                        ctx.response().headers().add(CONTENT_TYPE.getName(), mimeType);
+                        final Pump pump = Pump.pump(documentResource.readStream, ctx.response());
+                        documentResource.readStream.endHandler(nothing -> {
+                            documentResource.closeHandler.handle(null);
+                            ctx.response().end();
+                        });
+                        pump.start();
+                        // TODO: exception handlers
+
+                    } else {
+                        if (log.isTraceEnabled()) {
+                            log.trace("RestStorageHandler Could not find resource: " + ctx.request().uri());
+                        }
+                        ctx.response().setStatusCode(StatusCode.NOT_FOUND.getStatusCode());
+                        ctx.response().setStatusMessage(StatusCode.NOT_FOUND.getStatusMessage());
+                        ctx.response().end(StatusCode.NOT_FOUND.toString());
+                    }
+                });
             });
         }
     }
@@ -713,7 +708,7 @@ public class RestStorageHandler implements Handler<HttpServerRequest> {
         if (path.equals("/")) {
             return "/";
         }
-        StringBuilder sb = new StringBuilder("");
+        StringBuilder sb = new StringBuilder();
         StringBuilder p = new StringBuilder();
         String[] parts = path.split("/");
         for (int i = 0; i < parts.length; i++) {
