@@ -29,8 +29,8 @@ public class RedisStorage implements Storage {
 
     private Logger log = LoggerFactory.getLogger(RedisStorage.class);
 
-    // set to very high value = Sat Nov 20 2286 17:46:39
-    private static final String MAX_EXPIRE_IN_MILLIS = "9999999999999";
+    // set to very high value = Wed Nov 16 5138 09:46:39
+    private static final String MAX_EXPIRE_IN_MILLIS = "99999999999999";
     private final String EMPTY = "";
     private static final float MAX_PERCENTAGE = 100.0f;
     private static final float MIN_PERCENTAGE = 0.0f;

@@ -119,7 +119,7 @@ public class ExpirationIntegrationTest extends RedisStorageIntegrationTestCase {
     public void testPutExpiresVeryLate(TestContext context) {
         Async async = context.async();
         given().
-                header("x-expire-after", "30947504176").
+                header("x-expire-after", "309475041760").
                 body("{ \"foo\": \"bar1\" }").
                 when().
                 put("expiresVeryLate").
