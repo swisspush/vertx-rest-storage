@@ -15,7 +15,7 @@ import static org.junit.Assert.assertThat;
 
 public class RedisCleanupLuaScriptTests extends AbstractLuaScriptTest {
 
-    private static final double MAX_EXPIRE_IN_MILLIS = 9999999999999d;
+    private static final double MAX_EXPIRE_IN_MILLIS = 99999999999999d;
 
     @Test
     public void cleanupAllExpiredAmount2() throws InterruptedException {
@@ -153,7 +153,7 @@ public class RedisCleanupLuaScriptTests extends AbstractLuaScriptTest {
     public void cleanup1000000ExpiredAmount2000000Bulksize1000() throws InterruptedException {
 
         // ARRANGE
-        // check the amount already written: zcount rest-storage:collections:project:server:test:test1 0 9999999999999
+        // check the amount already written: zcount rest-storage:collections:project:server:test:test1 0 99999999999999
         // the dump.rdb file had the size of 315M after the 2M inserts
         String now = String.valueOf(System.currentTimeMillis());
         String maxExpire = String.valueOf(MAX_EXPIRE_IN_MILLIS);
@@ -225,7 +225,7 @@ public class RedisCleanupLuaScriptTests extends AbstractLuaScriptTest {
                         add(expirableSet);
                         add("false");
                         add(expire);
-                        add("9999999999999");
+                        add("99999999999999");
                         add(resourceValue);
                         add(UUID.randomUUID().toString());
                         add(prefixLock);

@@ -16,7 +16,7 @@ public class EtagIntegrationTest extends RedisStorageIntegrationTestCase {
     private final String ETAG_HEADER = "Etag";
     private final String IF_NONE_MATCH_HEADER = "if-none-match";
     private final String EXPIRE_AFTER_HEADER = "x-expire-after";
-    private final String MAX_EXPIRE_IN_MILLIS = "9999999999999";
+    private final String MAX_EXPIRE_IN_MILLIS = "99999999999999";
 
     @Test
     public void testEtag(TestContext context) {

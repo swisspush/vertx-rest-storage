@@ -21,6 +21,9 @@ public class RedisPutLuaScriptTests extends AbstractLuaScriptTest {
     private final static String OWNER = "owner";
     private final static String MODE = "mode";
 
+    private static final double MIN_SCORE = 0d;
+    private static final double MAX_SCORE = 99999999999999d;
+
     @Test
     public void putResourcePathDepthIs3() {
 
@@ -28,10 +31,10 @@ public class RedisPutLuaScriptTests extends AbstractLuaScriptTest {
         evalScriptPut(":project:server:test:test1:test2", "{\"content\": \"test/test1/test2\"}");
 
         // ASSERT
-        assertThat("server", equalTo(jedis.zrangeByScore("rest-storage:collections:project", 0d, 9999999999999d).iterator().next()));
-        assertThat("test", equalTo(jedis.zrangeByScore("rest-storage:collections:project:server", 0d, 9999999999999d).iterator().next()));
-        assertThat("test1", equalTo(jedis.zrangeByScore("rest-storage:collections:project:server:test", 0d, 9999999999999d).iterator().next()));
-        assertThat("test2", equalTo(jedis.zrangeByScore("rest-storage:collections:project:server:test:test1", 0d, 9999999999999d).iterator().next()));
+        assertThat("server", equalTo(jedis.zrangeByScore("rest-storage:collections:project", MIN_SCORE, MAX_SCORE).iterator().next()));
+        assertThat("test", equalTo(jedis.zrangeByScore("rest-storage:collections:project:server", MIN_SCORE, MAX_SCORE).iterator().next()));
+        assertThat("test1", equalTo(jedis.zrangeByScore("rest-storage:collections:project:server:test", MIN_SCORE, MAX_SCORE).iterator().next()));
+        assertThat("test2", equalTo(jedis.zrangeByScore("rest-storage:collections:project:server:test:test1", MIN_SCORE, MAX_SCORE).iterator().next()));
         assertThat("{\"content\": \"test/test1/test2\"}", equalTo(jedis.hget("rest-storage:resources:project:server:test:test1:test2", RESOURCE)));
     }
 
@@ -43,10 +46,10 @@ public class RedisPutLuaScriptTests extends AbstractLuaScriptTest {
         evalScriptPut(":project:server:test:test11", "{\"content\": \"test/test11\"}");
 
         // ASSERT
-        assertThat(jedis.zrangeByScore("rest-storage:collections:project", 0d, 9999999999999d).iterator().next(), equalTo("server"));
-        assertThat(jedis.zrangeByScore("rest-storage:collections:project:server", 0d, 9999999999999d).iterator().next(), equalTo("test"));
-        assertThat(jedis.zrangeByScore("rest-storage:collections:project:server:test", 0d, 9999999999999d).iterator().next(), equalTo("test1"));
-        assertThat(jedis.zrangeByScore("rest-storage:collections:project:server:test:test1", 0d, 9999999999999d).iterator().next(), equalTo("test2"));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project", MIN_SCORE, MAX_SCORE).iterator().next(), equalTo("server"));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project:server", MIN_SCORE, MAX_SCORE).iterator().next(), equalTo("test"));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project:server:test", MIN_SCORE, MAX_SCORE).iterator().next(), equalTo("test1"));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project:server:test:test1", MIN_SCORE, MAX_SCORE).iterator().next(), equalTo("test2"));
         assertThat(jedis.hget("rest-storage:resources:project:server:test:test1:test2", RESOURCE), equalTo("{\"content\": \"test/test1/test2\"}"));
     }
 
@@ -57,10 +60,10 @@ public class RedisPutLuaScriptTests extends AbstractLuaScriptTest {
         evalScriptPut(":project:server:test:test1:test2", "{\"content\": \"test/test1/test2\"}");
 
         // ASSERT
-        assertThat(jedis.zrangeByScore("rest-storage:collections:project", 0d, 9999999999999d).iterator().next(), equalTo("server"));
-        assertThat(jedis.zrangeByScore("rest-storage:collections:project:server", 0d, 9999999999999d).iterator().next(), equalTo("test"));
-        assertThat(jedis.zrangeByScore("rest-storage:collections:project:server:test", 0d, 9999999999999d).iterator().next(), equalTo("test1"));
-        assertThat(jedis.zrangeByScore("rest-storage:collections:project:server:test:test1", 0d, 9999999999999d).iterator().next(), equalTo("test2"));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project", MIN_SCORE, MAX_SCORE).iterator().next(), equalTo("server"));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project:server", MIN_SCORE, MAX_SCORE).iterator().next(), equalTo("test"));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project:server:test", MIN_SCORE, MAX_SCORE).iterator().next(), equalTo("test1"));
+        assertThat(jedis.zrangeByScore("rest-storage:collections:project:server:test:test1", MIN_SCORE, MAX_SCORE).iterator().next(), equalTo("test2"));
         assertThat(jedis.hget("rest-storage:resources:project:server:test:test1:test2", RESOURCE), equalTo("{\"content\": \"test/test1/test2\"}"));
     }
 
@@ -340,8 +343,8 @@ public class RedisPutLuaScriptTests extends AbstractLuaScriptTest {
                         add(prefixCollections);
                         add(expirableSet);
                         add("true");
-                        add("9999999999999");
-                        add("9999999999999");
+                        add("99999999999999");
+                        add("99999999999999");
                         add(resourceValue1);
                         add(UUID.randomUUID().toString());
                         add(prefixLock);

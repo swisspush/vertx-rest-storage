@@ -331,7 +331,7 @@ public class RedisStorageExpandLuaScriptTests extends AbstractLuaScriptTest {
                         add(prefixCollections);
                         add(expirableSet);
                         add(timestamp);
-                        add("9999999999999");
+                        add("99999999999999");
                         add(StringUtils.join(subResources, ";"));
                         add(String.valueOf(subResources.size()));
                     }
