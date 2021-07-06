@@ -1,6 +1,6 @@
 # vertx-rest-storage
 
-[![Build Status](https://travis-ci.org/swisspush/vertx-rest-storage.svg?branch=master)](https://travis-ci.org/swisspush/vertx-rest-storage)
+[![Build Status](https://travis-ci.com/swisspush/vertx-rest-storage.svg?branch=master)](https://travis-ci.com/swisspush/vertx-rest-storage)
 [![codecov](https://codecov.io/gh/swisspush/vertx-rest-storage/branch/master/graph/badge.svg)](https://codecov.io/gh/swisspush/vertx-rest-storage)
 [![](https://img.shields.io/github/issues-raw/swisspush/rest-storage.svg)](https://github.com/swisspush/vertx-rest-storage/issues?utf8=%E2%9C%93&q=is%3Aissue%20is%3Aopen%20)
 [![GitHub contributors](https://img.shields.io/github/contributors/swisspush/rest-storage.svg)](https://github.com/swisspush/vertx-rest-storage/graphs/contributors)
