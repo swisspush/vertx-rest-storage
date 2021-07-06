@@ -110,7 +110,7 @@ public class RestStorageHandler implements Handler<HttpServerRequest> {
 
     private void getResourceNotFound(RoutingContext ctx) {
         if (log.isTraceEnabled()) {
-            log.trace("RestStorageHandler resource not found: " + ctx.request().uri());
+            log.trace("RestStorageHandler resource not found: {}", ctx.request().uri());
         }
         ctx.response().setStatusCode(StatusCode.NOT_FOUND.getStatusCode());
         ctx.response().setStatusMessage(StatusCode.NOT_FOUND.getStatusMessage());
@@ -121,7 +121,7 @@ public class RestStorageHandler implements Handler<HttpServerRequest> {
         final String path = cleanPath(ctx.request().path().substring(prefixFixed.length()));
         final String etag = ctx.request().headers().get(IF_NONE_MATCH_HEADER.getName());
         if (log.isTraceEnabled()) {
-            log.trace("RestStorageHandler got GET Request path: " + path + " etag: " + etag);
+            log.trace("RestStorageHandler got GET Request path: {} etag: {}", path, etag);
         }
         MultiMap params = ctx.request().params();
         String offsetFromUrl = getString(params, OFFSET_PARAMETER);
@@ -130,7 +130,7 @@ public class RestStorageHandler implements Handler<HttpServerRequest> {
         storage.get(path, etag, offsetLimit.offset, offsetLimit.limit, new Handler<Resource>() {
             public void handle(Resource resource) {
                 if (log.isTraceEnabled()) {
-                    log.trace("RestStorageHandler resource exists: " + resource.exists);
+                    log.trace("RestStorageHandler resource exists: {}", resource.exists);
                 }
 
                 if (resource.error) {
@@ -158,7 +158,7 @@ public class RestStorageHandler implements Handler<HttpServerRequest> {
                     boolean html = (accept != null && accept.contains("text/html"));
                     if (resource instanceof CollectionResource) {
                         if (log.isTraceEnabled()) {
-                            log.trace("RestStorageHandler resource is collection: " + ctx.request().uri());
+                            log.trace("RestStorageHandler resource is collection: {}", ctx.request().uri());
                         }
                         CollectionResource collection = (CollectionResource) resource;
                         String collectionName = collectionName(path);
@@ -219,7 +219,7 @@ public class RestStorageHandler implements Handler<HttpServerRequest> {
                             ResourceNameUtil.resetReplacedColonsAndSemiColonsInList(sortedNames);
                             sortedNames.forEach(array::add);
                             if (log.isTraceEnabled()) {
-                                log.trace("RestStorageHandler return collection: " + sortedNames);
+                                log.trace("RestStorageHandler return collection: {}", sortedNames);
                             }
                             String body = new JsonObject().put(collectionName, array).encode();
                             ctx.response().headers().add(CONTENT_LENGTH.getName(), "" + body.length());
@@ -229,7 +229,7 @@ public class RestStorageHandler implements Handler<HttpServerRequest> {
                     }
                     if (resource instanceof DocumentResource) {
                         if (log.isTraceEnabled()) {
-                            log.trace("RestStorageHandler resource is a DocumentResource: " + ctx.request().uri());
+                            log.trace("RestStorageHandler resource is a DocumentResource: {}", ctx.request().uri());
                         }
                         if (ctx.request().uri().endsWith("/")) {
                             if (log.isTraceEnabled()) {
@@ -273,7 +273,7 @@ public class RestStorageHandler implements Handler<HttpServerRequest> {
                     }
                 } else {
                     if (log.isTraceEnabled()) {
-                        log.trace("RestStorageHandler Could not find resource: " + ctx.request().uri());
+                        log.trace("RestStorageHandler Could not find resource: {}", ctx.request().uri());
                     }
                     ctx.response().setStatusCode(StatusCode.NOT_FOUND.getStatusCode());
                     ctx.response().setStatusMessage(StatusCode.NOT_FOUND.getStatusMessage());
@@ -312,7 +312,8 @@ public class RestStorageHandler implements Handler<HttpServerRequest> {
                 ctx.response().setStatusCode(StatusCode.BAD_REQUEST.getStatusCode());
                 ctx.response().setStatusMessage(StatusCode.BAD_REQUEST.getStatusMessage());
                 ctx.response().end("Invalid " + IMPORTANCE_LEVEL_HEADER.getName() + " header: " + headers.get(IMPORTANCE_LEVEL_HEADER.getName()));
-                log.error("Rejecting PUT request to " + ctx.request().uri() + " because " + IMPORTANCE_LEVEL_HEADER.getName() + " header, has an invalid value: " + headers.get(IMPORTANCE_LEVEL_HEADER.getName()));
+                log.error("Rejecting PUT request to {} because {} header, has an invalid value: {}",
+                        ctx.request().uri(), IMPORTANCE_LEVEL_HEADER.getName(), headers.get(IMPORTANCE_LEVEL_HEADER.getName()));
                 return;
             }
 
@@ -324,19 +325,21 @@ public class RestStorageHandler implements Handler<HttpServerRequest> {
                         ctx.response().setStatusCode(StatusCode.INSUFFICIENT_STORAGE.getStatusCode());
                         ctx.response().setStatusMessage(StatusCode.INSUFFICIENT_STORAGE.getStatusMessage());
                         ctx.response().end(StatusCode.INSUFFICIENT_STORAGE.getStatusMessage());
-                        log.info("Rejecting PUT request to " + ctx.request().uri() + " because current memory usage of "
-                                + decimalFormat.format(currentMemoryUsage.get()) + "% is higher than provided importance level of " + importanceLevel + "%");
+                        log.info("Rejecting PUT request to {} because current memory usage of {}% is higher than " +
+                                        "provided importance level of {}%", ctx.request().uri(),
+                                decimalFormat.format(currentMemoryUsage.get()), importanceLevel);
                         return;
                     }
                 } else {
                     log.warn("Rejecting storage writes on low memory feature disabled, because current memory usage not available");
                 }
             } else {
-                log.warn("Received request with " + IMPORTANCE_LEVEL_HEADER.getName() + " header, but rejecting storage writes on low memory feature is disabled");
+                log.warn("Received request with {} header, but rejecting storage writes on low memory feature " +
+                        "is disabled", IMPORTANCE_LEVEL_HEADER.getName());
             }
         } else if (rejectStorageWriteOnLowMemory) {
-            log.debug("Received PUT request to " + ctx.request().uri() + " without " + IMPORTANCE_LEVEL_HEADER.getName()
-                    + " header. Going to handle this request with highest importance");
+            log.debug("Received PUT request to {} without {} header. Going to handle this request with highest importance",
+                    ctx.request().uri(), IMPORTANCE_LEVEL_HEADER.getName());
         }
 
         Long expire = -1L; // default infinit
@@ -347,13 +350,13 @@ public class RestStorageHandler implements Handler<HttpServerRequest> {
                 ctx.response().setStatusCode(StatusCode.BAD_REQUEST.getStatusCode());
                 ctx.response().setStatusMessage("Invalid " + EXPIRE_AFTER_HEADER.getName() + " header: " + headers.get(EXPIRE_AFTER_HEADER.getName()));
                 ctx.response().end(ctx.response().getStatusMessage());
-                log.error(EXPIRE_AFTER_HEADER.getName() + " header, invalid value: " + ctx.response().getStatusMessage());
+                log.error("{} header, invalid value: {}", EXPIRE_AFTER_HEADER.getName(), ctx.response().getStatusMessage());
                 return;
             }
         }
 
         if (log.isTraceEnabled()) {
-            log.trace("RestStorageHandler put resource: " + ctx.request().uri() + " with expire: " + expire);
+            log.trace("RestStorageHandler put resource: {} with expire: {}", ctx.request().uri(), expire);
         }
 
         String lock = "";
@@ -371,7 +374,7 @@ public class RestStorageHandler implements Handler<HttpServerRequest> {
                     ctx.response().setStatusCode(StatusCode.BAD_REQUEST.getStatusCode());
                     ctx.response().setStatusMessage("Invalid " + LOCK_MODE_HEADER.getName() + " header: " + headers.get(LOCK_MODE_HEADER.getName()));
                     ctx.response().end(ctx.response().getStatusMessage());
-                    log.error(LOCK_MODE_HEADER.getName() + " header, invalid value: " + ctx.response().getStatusMessage());
+                    log.error("{} header, invalid value: {}", LOCK_MODE_HEADER.getName(), ctx.response().getStatusMessage());
                     return;
                 }
             }
@@ -381,9 +384,10 @@ public class RestStorageHandler implements Handler<HttpServerRequest> {
                 if (lockExpire == null) {
                     ctx.request().resume();
                     ctx.response().setStatusCode(StatusCode.BAD_REQUEST.getStatusCode());
-                    ctx.response().setStatusMessage("Invalid " + LOCK_EXPIRE_AFTER_HEADER.getName() + " header: " + headers.get(LOCK_EXPIRE_AFTER_HEADER.getName()));
+                    ctx.response().setStatusMessage("Invalid " + LOCK_EXPIRE_AFTER_HEADER.getName() + " header: " +
+                            headers.get(LOCK_EXPIRE_AFTER_HEADER.getName()));
                     ctx.response().end(ctx.response().getStatusMessage());
-                    log.error(LOCK_EXPIRE_AFTER_HEADER.getName() + " header, invalid value: " + ctx.response().getStatusMessage());
+                    log.error("{} header, invalid value: {}", LOCK_EXPIRE_AFTER_HEADER.getName(), ctx.response().getStatusMessage());
                     return;
                 }
             }
@@ -399,7 +403,8 @@ public class RestStorageHandler implements Handler<HttpServerRequest> {
         if (merge && storeCompressed) {
             ctx.request().resume();
             ctx.response().setStatusCode(StatusCode.BAD_REQUEST.getStatusCode());
-            ctx.response().setStatusMessage("Invalid parameter/header combination: merge parameter and " + COMPRESS_HEADER.getName() + " header cannot be used concurrently");
+            ctx.response().setStatusMessage("Invalid parameter/header combination: merge parameter and " +
+                    COMPRESS_HEADER.getName() + " header cannot be used concurrently");
             ctx.response().end(ctx.response().getStatusMessage());
             return;
         }
@@ -494,7 +499,7 @@ public class RestStorageHandler implements Handler<HttpServerRequest> {
     private void deleteResource(RoutingContext ctx) {
         final String path = cleanPath(ctx.request().path().substring(prefixFixed.length()));
         if (log.isTraceEnabled()) {
-            log.trace("RestStorageHandler delete resource: " + ctx.request().uri());
+            log.trace("RestStorageHandler delete resource: {}", ctx.request().uri());
         }
 
         String lock = "";
@@ -515,7 +520,7 @@ public class RestStorageHandler implements Handler<HttpServerRequest> {
                     ctx.response().setStatusCode(StatusCode.BAD_REQUEST.getStatusCode());
                     ctx.response().setStatusMessage("Invalid " + LOCK_MODE_HEADER.getName() + " header: " + headers.get(LOCK_MODE_HEADER.getName()));
                     ctx.response().end(ctx.response().getStatusMessage());
-                    log.error(LOCK_MODE_HEADER.getName() + " header, invalid value: " + ctx.response().getStatusMessage());
+                    log.error("{} header, invalid value: {}", LOCK_MODE_HEADER.getName(), ctx.response().getStatusMessage());
                     return;
                 }
             }
@@ -525,9 +530,10 @@ public class RestStorageHandler implements Handler<HttpServerRequest> {
                 if (lockExpire == null) {
                     ctx.request().resume();
                     ctx.response().setStatusCode(StatusCode.BAD_REQUEST.getStatusCode());
-                    ctx.response().setStatusMessage("Invalid " + LOCK_EXPIRE_AFTER_HEADER.getName() + " header: " + headers.get(LOCK_EXPIRE_AFTER_HEADER.getName()));
+                    ctx.response().setStatusMessage("Invalid " + LOCK_EXPIRE_AFTER_HEADER.getName() + " header: " +
+                            headers.get(LOCK_EXPIRE_AFTER_HEADER.getName()));
                     ctx.response().end(ctx.response().getStatusMessage());
-                    log.error(LOCK_EXPIRE_AFTER_HEADER.getName() + " header, invalid value: " + ctx.response().getStatusMessage());
+                    log.error("{} header, invalid value: {}", LOCK_EXPIRE_AFTER_HEADER.getName(), ctx.response().getStatusMessage());
                     return;
                 }
             }
@@ -622,7 +628,7 @@ public class RestStorageHandler implements Handler<HttpServerRequest> {
 
                     if (resource.exists) {
                         if (log.isTraceEnabled()) {
-                            log.trace("RestStorageHandler resource is a DocumentResource: " + ctx.request().uri());
+                            log.trace("RestStorageHandler resource is a DocumentResource: {}", ctx.request().uri());
                         }
 
                         String mimeType = mimeTypeResolver.resolveMimeType(path);
@@ -642,7 +648,7 @@ public class RestStorageHandler implements Handler<HttpServerRequest> {
 
                     } else {
                         if (log.isTraceEnabled()) {
-                            log.trace("RestStorageHandler Could not find resource: " + ctx.request().uri());
+                            log.trace("RestStorageHandler Could not find resource: {}", ctx.request().uri());
                         }
                         ctx.response().setStatusCode(StatusCode.NOT_FOUND.getStatusCode());
                         ctx.response().setStatusMessage(StatusCode.NOT_FOUND.getStatusMessage());

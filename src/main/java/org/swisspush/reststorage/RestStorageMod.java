@@ -16,7 +16,7 @@ public class RestStorageMod extends AbstractVerticle {
     @Override
     public void start(Future<Void> fut) {
         ModuleConfiguration modConfig = ModuleConfiguration.fromJsonObject(config());
-        log.info("Starting RestStorageMod with configuration: " + modConfig);
+        log.info("Starting RestStorageMod with configuration: {}", modConfig);
         Storage storage;
         switch (modConfig.getStorageType()) {
             case filesystem:

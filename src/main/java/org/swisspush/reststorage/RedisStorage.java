@@ -151,14 +151,15 @@ public class RedisStorage implements Storage {
             } else if(currentMemoryUsagePercentage < MIN_PERCENTAGE){
                 currentMemoryUsagePercentage = MIN_PERCENTAGE;
             }
-            log.info("Current memory usage is " + decimalFormat.format(currentMemoryUsagePercentage) + "%");
+            log.info("Current memory usage is {}%", decimalFormat.format(currentMemoryUsagePercentage));
             future.complete(Optional.of(currentMemoryUsagePercentage));
         });
         return future;
     }
 
     private void logPropertyWarning(String property, Exception ex){
-        log.warn("No or invalid '"+property+"' value received from redis. Unable to calculate the current memory usage. Exception: " + ex.toString());
+        log.warn("No or invalid '{}' value received from redis. Unable to calculate the current memory usage. " +
+                "Exception: {}", property, ex.toString());
     }
 
     private enum LuaScript {
@@ -201,7 +202,7 @@ public class RedisStorage implements Storage {
          * @param luaScriptType
          */
         private void composeLuaScript(LuaScript luaScriptType) {
-            log.info("read the lua script for script type: " + luaScriptType + " with logoutput: " + logoutput);
+            log.info("read the lua script for script type: {} with logoutput: {}", luaScriptType, logoutput);
 
             // It is not possible to evalsha or eval inside lua scripts,
             // so we wrap the cleanupscript around the deletescript manually to avoid code duplication.
@@ -269,15 +270,16 @@ public class RedisStorage implements Storage {
                     log.debug("RedisStorage script already exists in redis cache: " + luaScriptType);
                     redisCommand.exec(executionCounterIncr);
                 } else {
-                    log.info("load lua script for script type: " + luaScriptType + " logutput: " + logoutput);
+                    log.info("load lua script for script type: {} logoutput: {}", luaScriptType, logoutput);
                     redisClient.scriptLoad(script, stringAsyncResult -> {
                         String newSha = stringAsyncResult.result();
-                        log.info("got sha from redis for lua script: " + luaScriptType + ": " + newSha);
+                        log.info("got sha from redis for lua script: {}: {}", luaScriptType, newSha);
                         if(!newSha.equals(sha)) {
-                            log.warn("the sha calculated by myself: " + sha + " doesn't match with the sha from redis: " + newSha + ". We use the sha from redis");
+                            log.warn("the sha calculated by myself: {} doesn't match with the sha from redis: {}. " +
+                                    "We use the sha from redis", sha, newSha);
                         }
                         sha = newSha;
-                        log.info("execute redis command for script type: " + luaScriptType + " with new sha: " + sha);
+                        log.info("execute redis command for script type: {} with new sha: {}", luaScriptType, sha);
                         redisCommand.exec(executionCounterIncr);
                     });
                 }
@@ -462,7 +464,7 @@ public class RedisStorage implements Storage {
                 if(event.succeeded()){
                     JsonArray values = event.result();
                     if (log.isTraceEnabled()) {
-                        log.trace("RedisStorage get result: " + values);
+                        log.trace("RedisStorage get result: {}", values);
                     }
                     if("notModified".equals(values.getString(0))){
                         notModified(handler);
@@ -475,14 +477,14 @@ public class RedisStorage implements Storage {
                     String message = event.cause().getMessage();
                     if(message != null && message.startsWith("NOSCRIPT")) {
                         log.warn("get script couldn't be found, reload it");
-                        log.warn("amount the script got loaded: " + executionCounter);
+                        log.warn("amount the script got loaded: {}", executionCounter);
                         if(executionCounter > 10) {
                             log.error("amount the script got loaded is higher than 10, we abort");
                         } else {
                             luaScripts.get(LuaScript.GET).loadLuaScript(new Get(keys, arguments, handler), executionCounter);
                         }
                     } else {
-                        log.error("GET request failed with message: " + message);
+                        log.error("GET request failed with message: {}", message);
                     }
                 }
             });
@@ -529,7 +531,7 @@ public class RedisStorage implements Storage {
                 if(event.succeeded()){
                     Object value = event.result().getValue(0);
                     if (log.isTraceEnabled()) {
-                        log.trace("RedisStorage get result: " + value);
+                        log.trace("RedisStorage get result: {}", value);
                     }
                     if("compressionNotSupported".equalsIgnoreCase((String) value)){
                         error(handler, "Collections having compressed resources are not supported in storage expand");
@@ -578,14 +580,14 @@ public class RedisStorage implements Storage {
                     String message = event.cause().getMessage();
                     if(message != null && message.startsWith("NOSCRIPT")) {
                         log.warn("storageExpand script couldn't be found, reload it");
-                        log.warn("amount the script got loaded: " + executionCounter);
+                        log.warn("amount the script got loaded: {}", executionCounter);
                         if(executionCounter > 10) {
                             log.error("amount the script got loaded is higher than 10, we abort");
                         } else {
                             luaScripts.get(LuaScript.STORAGE_EXPAND).loadLuaScript(new StorageExpand(keys, arguments, handler, etag), executionCounter);
                         }
                     } else {
-                        log.error("StorageExpand request failed with message: " + message);
+                        log.error("StorageExpand request failed with message: {}", message);
                     }
                 }
             });
@@ -828,7 +830,7 @@ public class RedisStorage implements Storage {
                 if(event.succeeded()){
                     String result = event.result().getString(0);
                     if (log.isTraceEnabled()) {
-                        log.trace("RedisStorage successfull put. Result: " + result);
+                        log.trace("RedisStorage successful put. Result: {}", result);
                     }
                     if(result != null && result.startsWith("existingCollection")){
                         CollectionResource c = new CollectionResource();
@@ -849,14 +851,14 @@ public class RedisStorage implements Storage {
                     String message = event.cause().getMessage();
                     if(message != null && message.startsWith("NOSCRIPT")) {
                         log.warn("put script couldn't be found, reload it");
-                        log.warn("amount the script got loaded: " + executionCounter);
+                        log.warn("amount the script got loaded: {}", executionCounter);
                         if(executionCounter > 10) {
                             log.error("amount the script got loaded is higher than 10, we abort");
                         } else {
                             luaScripts.get(LuaScript.PUT).loadLuaScript(new Put(d, keys, arguments, handler), executionCounter);
                         }
                     } else if (message != null && d.errorHandler != null){
-                        log.error("PUT request failed with message: " + message);
+                        log.error("PUT request failed with message: {}", message);
                         d.errorHandler.handle(event.cause());
                     }
                 }
@@ -911,7 +913,7 @@ public class RedisStorage implements Storage {
             redisClient.evalsha(luaScripts.get(LuaScript.DELETE).getSha(), keys, arguments, event -> {
                 if(event.cause() != null && event.cause().getMessage().startsWith("NOSCRIPT")) {
                     log.warn("delete script couldn't be found, reload it");
-                    log.warn("amount the script got loaded: " + executionCounter);
+                    log.warn("amount the script got loaded: {}", executionCounter);
                     if(executionCounter > 10) {
                         log.error("amount the script got loaded is higher than 10, we abort");
                     } else {
@@ -925,7 +927,7 @@ public class RedisStorage implements Storage {
                     result = event.result().getString(0);
                 }
                 if (log.isTraceEnabled()) {
-                    log.trace("RedisStorage delete result: " + result);
+                    log.trace("RedisStorage delete result: {}", result);
                 }
                 if ("notEmpty".equals(result)) {
                     notEmpty(handler);
@@ -971,7 +973,7 @@ public class RedisStorage implements Storage {
 
         redisClient.evalsha(luaScripts.get(LuaScript.CLEANUP).getSha(), Collections.emptyList(), arguments, event -> {
             if (log.isTraceEnabled()) {
-                log.trace("RedisStorage cleanup resources succeeded: " + event.succeeded());
+                log.trace("RedisStorage cleanup resources succeeded: {}", event.succeeded());
             }
 
             if(event.failed() && event.cause() != null && event.cause().getMessage().startsWith("NOSCRIPT")) {
@@ -985,7 +987,7 @@ public class RedisStorage implements Storage {
                 cleanedThisRun = event.result().getLong(0);
             }
             if (log.isTraceEnabled()) {
-                log.trace("RedisStorage cleanup resources cleanded this run: " + cleanedThisRun);
+                log.trace("RedisStorage cleanup resources cleanded this run: {}", cleanedThisRun);
             }
             final long cleaned = cleanedLastRun + cleanedThisRun;
             if (cleanedThisRun != 0 && cleaned < maxdel) {
@@ -997,7 +999,7 @@ public class RedisStorage implements Storage {
                 redisClient.zcount(expirableSet, 0, System.currentTimeMillis(), longAsyncResult -> {
                     Long result = longAsyncResult.result();
                     if (log.isTraceEnabled()) {
-                        log.trace("RedisStorage cleanup resources zcount on expirable set: " + result);
+                        log.trace("RedisStorage cleanup resources zcount on expirable set: {}", result);
                     }
                     int resToCleanLeft = 0;
                     if (result != null && result.intValue() >= 0) {
@@ -1077,7 +1079,7 @@ public class RedisStorage implements Storage {
     public void cleanup(Handler<DocumentResource> handler, String cleanupResourcesAmountStr) {
         long cleanupResourcesAmountUsed = cleanupResourcesAmount;
         if (log.isTraceEnabled()) {
-            log.trace("RedisStorage cleanup resources,  cleanupResourcesAmount: " + cleanupResourcesAmountUsed);
+            log.trace("RedisStorage cleanup resources,  cleanupResourcesAmount: {}", cleanupResourcesAmountUsed);
         }
         try {
             cleanupResourcesAmountUsed = Long.parseLong(cleanupResourcesAmountStr);

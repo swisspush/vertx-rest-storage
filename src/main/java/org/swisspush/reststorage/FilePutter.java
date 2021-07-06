@@ -68,7 +68,7 @@ public class FilePutter {
             if (result.succeeded()) {
                 openTmpFile();
             } else {
-                log.warn("Failed to create directory '" + tmpFileParentRealPath + "'.");
+                log.warn("Failed to create directory '{}'.", tmpFileParentRealPath);
                 resolveWithErroneousResource();
             }
         });
