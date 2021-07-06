@@ -20,14 +20,14 @@ import static org.hamcrest.core.IsEqual.equalTo;
 public class CleanupIntegrationTest extends RedisStorageIntegrationTestCase {
 
     @Test
-    public void testNothingToCleanup(TestContext testContext) throws InterruptedException {
+    public void testNothingToCleanup(TestContext testContext) {
         Async async = testContext.async();
         validateCleanupResults(0,0);
         async.complete();
     }
 
     @Test
-    public void testCleanupAmountBelowBulkSize(TestContext testContext) throws InterruptedException {
+    public void testCleanupAmountBelowBulkSize(TestContext testContext) {
         Async async = testContext.async();
         generateResourcesAndWaitUntilExpired(100);
         validateCleanupResults(100,0);
@@ -35,7 +35,7 @@ public class CleanupIntegrationTest extends RedisStorageIntegrationTestCase {
     }
 
     @Test
-    public void testCleanupAmountHigherThanBulkSize(TestContext testContext) throws InterruptedException {
+    public void testCleanupAmountHigherThanBulkSize(TestContext testContext) {
         Async async = testContext.async();
         generateResourcesAndWaitUntilExpired(300);
         validateCleanupResults(300,0);

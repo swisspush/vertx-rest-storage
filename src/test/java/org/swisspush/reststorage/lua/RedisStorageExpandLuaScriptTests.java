@@ -14,6 +14,7 @@ import io.vertx.core.json.JsonArray;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -117,7 +118,7 @@ public class RedisStorageExpandLuaScriptTests extends AbstractLuaScriptTest {
         evalScriptPut(":project:server:test:sub:othersubsub:item4", "{\"content\": \"content_sub_4\"}");
 
         // ACT
-        List<String> subResources = Arrays.asList("sub/");
+        List<String> subResources = Collections.singletonList("sub/");
         List<List<String>> value = evalScriptStorageExpandAndExtract(":project:server:test", subResources);
 
         // ASSERT
@@ -126,7 +127,7 @@ public class RedisStorageExpandLuaScriptTests extends AbstractLuaScriptTest {
         assertThat(value.get(0).get(1), equalTo("[\"othersubsub\\/\",\"subsub\\/\"]"));
 
         // ACT
-        subResources = Arrays.asList("subsub/");
+        subResources = Collections.singletonList("subsub/");
         value = evalScriptStorageExpandAndExtract(":project:server:test:sub", subResources);
 
         // ASSERT
@@ -279,7 +280,7 @@ public class RedisStorageExpandLuaScriptTests extends AbstractLuaScriptTest {
         evalScriptPut(":project:server:test:item1", "{\"content\": \"content_1\"}", AbstractLuaScriptTest.MAX_EXPIRE, "etag1", true);
 
         // ACT
-        List<String> subResources = Arrays.asList("item1");
+        List<String> subResources = Collections.singletonList("item1");
         String value = (String) evalScriptStorageExpand(":project:server:test", subResources);
 
         // ASSERT
@@ -313,7 +314,6 @@ public class RedisStorageExpandLuaScriptTests extends AbstractLuaScriptTest {
         assertThat(value2.get(1).get(1), equalTo("{\"content\": \"content_3\"}"));
     }
 
-    @SuppressWarnings({"rawtypes", "unchecked", "serial"})
     private Object evalScriptStorageExpand(final String resourceName1, final List<String> subResources) {
         return evalScriptStorageExpand(resourceName1, subResources, String.valueOf(System.currentTimeMillis()));
     }
@@ -331,7 +331,7 @@ public class RedisStorageExpandLuaScriptTests extends AbstractLuaScriptTest {
                         add(prefixCollections);
                         add(expirableSet);
                         add(timestamp);
-                        add("9999999999999");
+                        add("99999999999999");
                         add(StringUtils.join(subResources, ";"));
                         add(String.valueOf(subResources.size()));
                     }

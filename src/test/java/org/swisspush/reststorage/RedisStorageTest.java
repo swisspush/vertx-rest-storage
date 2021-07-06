@@ -272,7 +272,7 @@ public class RedisStorageTest {
         async.awaitSuccess();
     }
 
-    private class SuccessAsyncResult implements AsyncResult<JsonObject> {
+    private static class SuccessAsyncResult implements AsyncResult<JsonObject> {
 
         @Override
         public JsonObject result() {
@@ -295,7 +295,7 @@ public class RedisStorageTest {
         }
     }
 
-    private class FailAsyncResult implements AsyncResult<JsonObject> {
+    private static class FailAsyncResult implements AsyncResult<JsonObject> {
 
         @Override
         public JsonObject result() {

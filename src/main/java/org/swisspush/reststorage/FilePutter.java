@@ -68,7 +68,7 @@ public class FilePutter {
             if (result.succeeded()) {
                 openTmpFile();
             } else {
-                log.warn("Failed to create directory '" + tmpFileParentRealPath + "'.");
+                log.warn("Failed to create directory '{}'.", tmpFileParentRealPath);
                 resolveWithErroneousResource();
             }
         });
@@ -89,11 +89,7 @@ public class FilePutter {
     private void resolveWithTmpFileResource(String realFilePath, final AsyncFile tmpFile) {
         final DocumentResource d = new DocumentResource();
         d.writeStream = tmpFile;
-        d.closeHandler = v -> {
-            tmpFile.close(ev -> {
-                moveTmpFileToFinalDestination(d);
-            });
-        };
+        d.closeHandler = v -> tmpFile.close(ev -> moveTmpFileToFinalDestination(d));
         d.addErrorHandler(err -> {
             log.error("Put file failed:", err);
             fileCleanupManager.cleanupFile(realFilePath, tmpFile, null);

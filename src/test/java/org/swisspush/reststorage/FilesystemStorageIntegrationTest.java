@@ -15,7 +15,7 @@ import static org.hamcrest.Matchers.hasItems;
 public class FilesystemStorageIntegrationTest extends FilesystemStorageTestCase {
 
     @Test
-    public void testGetCollection(TestContext testContext) throws InterruptedException {
+    public void testGetCollection(TestContext testContext) {
         Async async = testContext.async();
         String path = TEST_FILES_PATH + "/collection/sub/resources/";
         with().body("<h1>nemo.html</h1>").put(path + "nemo.html");
@@ -27,7 +27,7 @@ public class FilesystemStorageIntegrationTest extends FilesystemStorageTestCase 
     }
 
     @Test
-    public void testDeleteCollectionWithRecursiveParameter(TestContext testContext) throws InterruptedException {
+    public void testDeleteCollectionWithRecursiveParameter(TestContext testContext) {
         Async async = testContext.async();
         String path = TEST_FILES_PATH + "/collection/sub/resources/";
         with().body("<h1>nemo.html</h1>").put(path + "nemo.html");
@@ -46,7 +46,7 @@ public class FilesystemStorageIntegrationTest extends FilesystemStorageTestCase 
     }
 
     @Test
-    public void testDeleteCollectionWithoutRecursiveParameter(TestContext testContext) throws InterruptedException {
+    public void testDeleteCollectionWithoutRecursiveParameter(TestContext testContext) {
         Async async = testContext.async();
         String path = TEST_FILES_PATH + "/collection/sub/resources/";
         with().body("<h1>nemo.html</h1>").put(path + "nemo.html");
