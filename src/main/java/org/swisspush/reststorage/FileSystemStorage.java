@@ -225,7 +225,7 @@ public class FileSystemStorage implements Storage {
                 if(cause instanceof FileSystemException && cause.getCause() instanceof DirectoryNotEmptyException){
                     // Failed to delete directory because it's not empty. Therefore we must not
                     // delete it at all and we're done now.
-                    log.debug( "Directory '"+pathAbs+"' not empty. Stop bubbling deleting dirs." );
+                    log.debug( "Directory '{}' not empty. Stop bubbling deleting dirs.", pathAbs);
                 }else if(cause instanceof FileSystemException && cause.getCause() instanceof NoSuchFileException){
                     // Somehow a caller requested to delete a directory which seems not to exist.
                     // This should never be the case theoretically. (except maybe some race

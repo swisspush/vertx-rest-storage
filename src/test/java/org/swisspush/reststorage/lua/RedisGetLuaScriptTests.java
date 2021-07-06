@@ -174,7 +174,7 @@ public class RedisGetLuaScriptTests extends AbstractLuaScriptTest {
     }
     
     @Test
-    public void getCollectionInvalidOffsetCount() throws InterruptedException {
+    public void getCollectionInvalidOffsetCount() {
 
         // ARRANGE
         evalScriptPut(":project:server:test:test1:test2", "{\"content\": \"test/test1/test2\"}");
@@ -191,7 +191,7 @@ public class RedisGetLuaScriptTests extends AbstractLuaScriptTest {
     }
     
     @Test
-    public void getCollectionOffsetCountInsideBoundaries() throws InterruptedException {
+    public void getCollectionOffsetCountInsideBoundaries() {
 
         // ARRANGE
         evalScriptPut(":project:server:test:test1:test2", "{\"content\": \"test/test1/test2\"}");
@@ -232,7 +232,7 @@ public class RedisGetLuaScriptTests extends AbstractLuaScriptTest {
     }
     
     @Test
-    public void getCollectionOffsetCountOutsideBoundaries() throws InterruptedException {
+    public void getCollectionOffsetCountOutsideBoundaries() {
 
         // ARRANGE
         evalScriptPut(":project:server:test:test1:test2", "{\"content\": \"test/test1/test2\"}");

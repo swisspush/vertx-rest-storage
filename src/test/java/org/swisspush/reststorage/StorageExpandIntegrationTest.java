@@ -460,7 +460,7 @@ public class StorageExpandIntegrationTest extends RedisStorageIntegrationTestCas
                 .then()
                 .assertThat()
                 .statusCode(409)
-                .body(containsString("Collections having compressed resources are not supported in storage expand"));;
+                .body(containsString("Collections having compressed resources are not supported in storage expand"));
 
         async.complete();
     }

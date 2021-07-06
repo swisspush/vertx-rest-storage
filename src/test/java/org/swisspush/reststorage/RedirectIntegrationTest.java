@@ -15,7 +15,7 @@ import static com.jayway.restassured.RestAssured.with;
 public class RedirectIntegrationTest extends RedisStorageIntegrationTestCase {
 
     @Test
-    public void testGetHTMLResourceWithoutTrailingSlash(TestContext testContext) throws InterruptedException {
+    public void testGetHTMLResourceWithoutTrailingSlash(TestContext testContext) {
         Async async = testContext.async();
         RestAssured.basePath = "/pages";
         with().body("<h1>nemo.html</h1>").put("nemo.html");
@@ -27,7 +27,7 @@ public class RedirectIntegrationTest extends RedisStorageIntegrationTestCase {
     }
 
     @Test
-    public void testGetHTMLResourceWithTrailingSlash(TestContext testContext) throws InterruptedException {
+    public void testGetHTMLResourceWithTrailingSlash(TestContext testContext) {
         Async async = testContext.async();
         RestAssured.basePath = "/pages";
         with().body("<h1>nemo.html</h1>").put("nemo.html");

@@ -84,7 +84,10 @@ public class RestStorageHandlerTest {
         verify(response, times(1)).setStatusMessage(eq(StatusCode.BAD_REQUEST.getStatusMessage()));
         verify(response, times(1)).end(eq("Invalid x-importance-level header: not_a_number"));
         verify(log, times(1)).error(
-                eq("Rejecting PUT request to /some/resource because x-importance-level header, has an invalid value: not_a_number"));
+                eq("Rejecting PUT request to {} because {} header, has an invalid value: {}"),
+                eq("/some/resource"),
+                eq("x-importance-level"),
+                eq("not_a_number"));
     }
 
     @Test
@@ -97,8 +100,9 @@ public class RestStorageHandlerTest {
 
         // ASSERT
         verify(log, times(1)).debug(
-                eq("Received PUT request to /some/resource without x-importance-level header. " +
-                        "Going to handle this request with highest importance"));
+                eq("Received PUT request to {} without {} header. Going to handle this request with highest importance"),
+                eq("/some/resource"),
+                eq("x-importance-level"));
     }
 
     @Test
@@ -114,8 +118,9 @@ public class RestStorageHandlerTest {
 
         // ASSERT
         verify(log, times(1)).warn(
-                eq("Received request with x-importance-level header, but rejecting storage writes on " +
-                        "low memory feature is disabled"));
+                eq("Received request with {} header, but rejecting storage writes on " +
+                        "low memory feature is disabled"),
+                eq("x-importance-level"));
     }
 
     @Test
@@ -152,7 +157,10 @@ public class RestStorageHandlerTest {
         verify(response, times(1)).setStatusMessage(eq(StatusCode.INSUFFICIENT_STORAGE.getStatusMessage()));
         verify(response, times(1)).end(eq(StatusCode.INSUFFICIENT_STORAGE.getStatusMessage()));
         verify(log, times(1)).info(
-                eq("Rejecting PUT request to /some/resource because current memory usage of 75% is higher than provided importance level of 50%"));
+                eq("Rejecting PUT request to {} because current memory usage of {}% is higher than provided importance level of {}%"),
+                eq("/some/resource"),
+                eq("75"),
+                eq(50));
     }
 
     @Test
@@ -183,9 +191,7 @@ public class RestStorageHandlerTest {
                         }
                         @Override public boolean writeQueueFull() { return false; }
                     };
-                    resource.closeHandler = v -> {
-                        log.debug("Resource closeHandler got called.");
-                    };
+                    resource.closeHandler = v -> log.debug("Resource closeHandler got called.");
                     resource.addErrorHandler( err -> {
                         synchronized (errorHandlerGotCalledPtr){
                             log.debug("Resource errorHandler got called.");
@@ -286,7 +292,7 @@ public class RestStorageHandlerTest {
                 private String statusMessage;
                 private boolean ended = false;
                 private Integer statusCode = null;
-                private MultiMap headers = new CaseInsensitiveHeaders();
+                private final MultiMap headers = new CaseInsensitiveHeaders();
 
                 @Override
                 public boolean ended() {
@@ -321,9 +327,7 @@ public class RestStorageHandlerTest {
                     ended = true;
                     testContext.assertEquals(405, statusCode);
                     // Defer to ensure handler really is done (and doesn't do any crap after he called end).
-                    vertx.setTimer(20, (delay) -> {
-                        async.complete();
-                    });
+                    vertx.setTimer(20, (delay) -> async.complete());
                 }
             };
             request = new FailFastVertxHttpServerRequest() {

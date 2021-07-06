@@ -43,7 +43,7 @@ public class FilesystemStorageTest {
     }
 
     @Test
-    public void removesFilesWhenPutGotInterrupted(TestContext testContext) throws InterruptedException {
+    public void removesFilesWhenPutGotInterrupted(TestContext testContext) {
 
         // Keep track of state during test
         final boolean[] handlerCalledPtr = new boolean[]{ false };
@@ -229,9 +229,7 @@ public class FilesystemStorageTest {
         }
 
         // Challenge victim
-        victim.delete( "/my/pseudo/file/to/delete", null, null, 0, false, false, resource -> {
-            deleteHandlerGotCalled[0] = true;
-        });
+        victim.delete( "/my/pseudo/file/to/delete", null, null, 0, false, false, resource -> deleteHandlerGotCalled[0] = true);
 
         // Assert
         testContext.assertTrue( deleteHandlerGotCalled[0] , "Victim failed to call handler after deletion.");
@@ -303,9 +301,7 @@ public class FilesystemStorageTest {
             final DocumentResource documentResource = (DocumentResource) resource;
             // Provide handler, first because victim tries to call this without a null
             // check and 2nd to get notified when victim completes.
-            documentResource.endHandler = aVoid -> {
-                victimIsDoneWithItsWork[0] = true;
-            };
+            documentResource.endHandler = aVoid -> victimIsDoneWithItsWork[0] = true;
             documentResource.addErrorHandler(thr -> {
                 logger.trace( "Victim reported a problem:", new Exception("Mocked error handler received a throwable.",thr) );
                 victimIsDoneWithItsWork[0] = true;

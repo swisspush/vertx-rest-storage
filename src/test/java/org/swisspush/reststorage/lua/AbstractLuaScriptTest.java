@@ -35,7 +35,7 @@ public abstract class AbstractLuaScriptTest {
     final static String prefixDeltaEtags = "delta:etags";
     final static String prefixLock = "redis-storage:locks";
 
-    static final String MAX_EXPIRE = "9999999999999";
+    static final String MAX_EXPIRE = "99999999999999";
 
     Jedis jedis = null;
 
@@ -72,7 +72,7 @@ public abstract class AbstractLuaScriptTest {
                 if (stripLogNotice && line.contains("redis.LOG_NOTICE,")) {
                     continue;
                 }
-                sb.append(line + "\n");
+                sb.append(line).append("\n");
             }
 
         } catch (IOException e) {
@@ -131,7 +131,7 @@ public abstract class AbstractLuaScriptTest {
                         add(expirableSet);
                         add("false");
                         add(expire);
-                        add("9999999999999");
+                        add("99999999999999");
                         add(resourceValue);
                         add(etagValue);
                         add(prefixLock);
@@ -169,7 +169,7 @@ public abstract class AbstractLuaScriptTest {
                         add(prefixCollections);
                         add(expirableSet);
                         add(timestamp);
-                        add("9999999999999");
+                        add("99999999999999");
                         add(offset);
                         add(count);
                     }

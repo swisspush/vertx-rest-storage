@@ -11,6 +11,7 @@ import org.junit.runner.RunWith;
 import org.mockito.Mockito;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.zip.GZIPInputStream;
 
@@ -23,10 +24,10 @@ import java.util.zip.GZIPInputStream;
 public class GZIPUtilTest {
 
     @Test
-    public void testCompressResource(TestContext testContext) throws Exception {
+    public void testCompressResource(TestContext testContext) {
         Async async = testContext.async();
         String uncompressedString = "My uncompresed Resource";
-        byte[] uncompressed = uncompressedString.getBytes("UTF-8");
+        byte[] uncompressed = uncompressedString.getBytes(StandardCharsets.UTF_8);
         GZIPUtil.compressResource(Vertx.vertx(), Mockito.mock(Logger.class), uncompressed, compressResourceResult -> {
             testContext.assertTrue(compressResourceResult.succeeded());
             testContext.assertNotEquals(uncompressed, compressResourceResult.result(), "Compressed and uncompressed Resource should not be equal");
@@ -48,7 +49,7 @@ public class GZIPUtilTest {
                 byte[] decompressed = out.toByteArray();
 
                 testContext.assertTrue(Arrays.equals(uncompressed, decompressed), "Compressed and decompressed Resource should be equal");
-                testContext.assertEquals(uncompressedString, new String(decompressed, "UTF-8"));
+                testContext.assertEquals(uncompressedString, new String(decompressed, StandardCharsets.UTF_8));
             } catch (Exception e) {
                 testContext.fail(e);
             }
@@ -61,11 +62,7 @@ public class GZIPUtilTest {
         Async async = testContext.async();
         byte[] compressedData = IOUtils.toByteArray(this.getClass().getClassLoader().getResourceAsStream("testResource.gz"));
         GZIPUtil.decompressResource(Vertx.vertx(), Mockito.mock(Logger.class), compressedData, decompressResourceResult -> {
-            try {
-                testContext.assertEquals("This is an uncompressed content from a gzip file", new String(decompressResourceResult.result(), "UTF-8"));
-            } catch (UnsupportedEncodingException e) {
-                testContext.fail(e);
-            }
+            testContext.assertEquals("This is an uncompressed content from a gzip file", new String(decompressResourceResult.result(), StandardCharsets.UTF_8));
             async.complete();
         });
     }
